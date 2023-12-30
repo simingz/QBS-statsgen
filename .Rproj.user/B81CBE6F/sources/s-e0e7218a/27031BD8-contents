@@ -1,0 +1,16 @@
+name: "QBS-statsgen"
+repo: 'https://github.com/simingz/QBS-statsgen'
+output_dir: ../docs
+navbar:
+  title: "QBS-statsgen"
+  left:
+  - text: Home
+    href: index.html
+output:
+  workflowr::wflow_html:
+    toc: yes
+    toc_float: yes
+    theme: readable
+    highlight: textmate
+
+source_label: "source" # Set to NULL to disable it; default is github octopus icon

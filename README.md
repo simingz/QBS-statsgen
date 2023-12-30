@@ -1,1 +1,5 @@
-QBS 148 in class exercise
+# QBS-statsgen
+
+A [workflowr][] project.
+
+[workflowr]: https://github.com/jdblischak/workflowr
