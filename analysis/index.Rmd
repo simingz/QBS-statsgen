@@ -1,5 +1,5 @@
 ---
-title: "Home"
+title: "QBS 148 Introduction to statistical genetics"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
@@ -10,3 +10,4 @@ editor_options:
 
 QBS 148 Introduction to statistical genetics
 
+[Exercise 1: GWAS](e1-gwas.html)
