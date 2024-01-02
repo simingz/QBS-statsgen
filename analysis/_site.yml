@@ -6,6 +6,9 @@ navbar:
   left:
   - text: Home
     href: index.html
+  right:
+  - text: source
+    href: 'https://github.com/simingz/QBS-statsgen'
 output:
   workflowr::wflow_html:
     toc: yes
@@ -13,4 +16,3 @@ output:
     theme: readable
     highlight: textmate
 
-source_label: "source" # Set to NULL to disable it; default is github octopus icon

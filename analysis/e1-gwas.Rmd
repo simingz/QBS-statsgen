@@ -8,4 +8,275 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+# Before the class
 
+- Install `plink`.
+
+Two versions
+
+* [PLINK Homepage (1.9)](https://www.cog-genomics.org/plink2)
+
+* [PLINK Homepage (2.0)](https://www.cog-genomics.org/plink2.0)
+
+For this exercise, please install plink 1.9. On discovery, plink is already installed. you can do `module load plink` to load plink.
+
+- Install R >= 4.1, Rstudio. You can do this on your local computer, the discovery cluster, or use https://posit.cloud/. The free plan offers 25 hours/month.
+
+- Install R packages, `snpStats`, `data.table`, `glue`, `dplyr`, `qqman`
+
+```{r, eval = F}
+install.packages('BiocManager')
+BiocManager::install('snpStats')
+install.packages("data.table") 
+install.packages("dplyr")
+install.packages("qqman")
+```
+
+- Getting the data
+
+This tutorial will use data from the PennCATH study of genetic risk factors for coronary artery disease. Download the data from one of the following sources (the contents are the same):
+
+- [Data (zip)](https://d1ypx1ckp5bo16.cloudfront.net/penncath/penncath.zip): Windows
+- [Data (tar)](https://d1ypx1ckp5bo16.cloudfront.net/penncath/penncath.tar.gz): Mac/Linux
+
+Download and unzip/untar the data; you can read the paper as well if you wish:
+
+* [Paper](http://www.ncbi.nlm.nih.gov/pubmed/21239051)
+
+
+The process this data for this tutorial (the orginal ones have a split chromosome issue)
+
+In command line run this:
+
+```{bash, eval = F}
+plink -bfile data/penncath --make-bed --out data/geno
+```
+
+If your plink is installed elsewhere, e.g. in `/bin` then you need to run it like `/bin/plink`. On discovery, plink is already installed. you can do `module load plink` to load plink then run the command above.
+
+
+# File formats
+
+The data are given in "PLINK" format, which is the most common format for chip-based GWAS data (as of this writing!). `PLINK` is an open-source whole genome association analysis toolset designed to perform a range of basic large-scale analyses in a computationally efficient manner. It is worth knowing how to use PLINK, although you can also do most of these things in R.
+
+I'll discuss PLINK the software program later on; for now, I'll just describe the organization of its files.
+
+Among the zipped files are three that are necessary to perform a GWAS, the `.bed`, `.bim`, and `.fam` files.
+
+## `.fam`
+
+This contains information on the subjects:
+
+```{r fam}
+library(data.table)
+library(dplyr)
+(fam <- fread('data/geno.fam'))
+```
+
+There are 1401 rows, one for each subject. The six colums are:
+
+1. Family ID
+2. Individual ID
+3. Paternal ID
+4. Maternal ID
+5. Sex (1=male; 2=female; other=unknown)
+6. Phenotype
+
+In this data set, columns 2-4 are unimportant. In general, they are used to specify pedigrees (e.g., subject 3 is the daughter of subjects 1 and 2). In this study, however, none of the subjects are related, so the only column that is important is the first, which records the subject's unique ID.
+
+Phenotype is typically used to record case-control status or something like that, but it is also quite common to just record clinical/biological information in a separate spreadsheet, which is what was done here.
+
+```{r clinical}
+(clinical <- fread('data/penncath.csv'))
+```
+
+As you can see, we've got the `FamID` to match this spreadsheet up with the genetic data, the disease status (`CAD=1` means that the subject has coronary artery disease), and some covariates (age, triglycerides, HDL and LDL cholesterol levels).
+
+## `.bim`
+
+The `.bim` file, by contrast, contains information on the genetic loci (SNPs):
+
+```{r bim}
+(bim <- fread('data/geno.bim'))
+```
+
+As you can see, we have `r nrow(bim)` rows here, one for each SNP measured in the study. The columns are:
+
+1. chromosome (1-22, X, Y or 0 if unplaced)
+2. rs# or snp identifier
+3. Genetic distance (morgans)
+4. Base-pair position (bp units)
+5. Allele 1 (usually minor)
+6. Allele 2 (usually major)
+
+It is pretty common for column 3 to be ignored, as it is here.
+
+So, for example, the file tells us that genetic locus rs12565286 is located 721290 bases into chromosome 1, and that most people have a C there, but some have a G.
+
+## `.bed`
+
+Finally, the `.bed` file, which has all the data. This is by far the largest of the three files, as it contains the entire `r nrow(fam)` by `r nrow(bim)` matrix of genotype calls for every subject and every locus. To keep things manageable, this file is encoded in a special binary format -- i.e., you can't just read it in through normal means.
+
+To access it, you'll have to use specialized applications. I'll discuss two, an R package called `snpStats` and a command-line interface (CLI) called PLINK.
+
+# Software
+
+## plink
+
+How to convert your genetic data into plink format?
+
+One can use plink2 binary software to convert your genetic dataset into this format. For example, the following --make-pgen (link to reference) command will convert your input.vcf file into binary_fileset.{pgen,pvar,psam}. Many other input formats are also supported in plink2.
+
+```{r, eval = F}
+plink2 --vcf input.vcf --make-pgen --out binary_fileset
+```
+Similarly, you can convert your genetic dataset into plink1.9 binary format (i.e. the triple of bed,bim,fam) with --make-bed (link to reference) command.
+```{r, eval = F}
+plink2 --vcf input.vcf --make-bed --out binary_fileset
+```
+Note that the file extension bed here refers to the binary PED format. It is nothing to do with UCSC’s BED (Browser Extensible Data) file format.
+
+
+## snpStats
+
+This is a Bioconductor package. So, you'll have to install it via `BiocManager`
+
+```{r}
+library(snpStats)
+```
+
+To read in data, there is the `read.plink()` function:
+
+```{r read-plink}
+obj <- read.plink('data/geno')
+```
+
+The function assumes that all the files have the same base filename, and differ only in their extension. If this is not the case, then you need to specify the filenames for the `.bed`, `.bim`, and `.fam` files separately.
+
+From here, `snpStats` has a lot of functions. For example, here's a plot (there are 1401 points, one for each subject) of whether the call rate (% of genotype calls that are non-missing) is related to the heterozygosity rate (% of loci that are called AB, as opposed to AA or BB):
+
+```{r snp-summary}
+plot(row.summary(obj$genotypes)[c(1,3)])
+```
+
+Feel free to read the `snpStats` documentation and explore for yourself, but one standard thing that one is always interested in is to simply convert various SNPs to a regular numeric matrix so that you can analyze them using standard R tools. For example, let's do a Fisher's exact test to see whether CAD is associated with SNP 143:
+
+```{r convert-numeric}
+x <- as(obj$genotypes[,143], 'numeric')
+fisher.test(drop(x), as.factor(clinical$CAD))
+```
+
+## Other R packages to read plink files.
+There are several other R packages that can work with PLINK formatted files.
+  - [plink2R](https://github.com/gabraham/plink2R)
+  - [pgenlibr](https://github.com/chrchang/plink-ng), this package can work with plink2 formatted files, ie .pgen, pvar, psam.
+  - [bigsnpr](https://privefl.github.io/bigsnpr/)
+  
+# GWAS Quality Control (QC)
+
+Check a few things. In actual GWAS, there are more to check. 
+
+Any SNP with a lot of missing data is probably questionable; these SNPs are often excluded from analysis (although we will talk about other approaches later). Likewise, any sample with lots of missing data suggests that there may be issues with the processing of that sample.
+
+```{r miss, h=4, w=4, out.width='50%', fig.align='default', fig.show='hold'}
+cs <- col.summary(obj$genotypes)
+rs <- row.summary(obj$genotypes)
+
+hist(rs$Call.rate, main = 'Individuals Call rate')
+hist(cs$Call.rate, main = 'SNPs Call rate')
+```
+
+Individuals look good -- SNPs, on the other hand, there are definitely some SNPs with lots of missing values. A common practice is to exclude SNPs with >5% or >10% missing data. 
+
+
+We will remove SNPs that may be problematic. 
+```{r}
+p_hwe <- 2*pnorm(-abs(cs$z.HWE)) # hardy-weinberg equilibrium. extreme value may indicate genotype error.
+
+keep <- cs$MAF > 0.001 &
+  cs$Call.rate > 0.9 & 
+   abs(cs$z.HWE) < 6.5
+
+(obj$genotypes <- obj$genotypes[, keep])
+obj$map <- obj$map[keep, ]
+
+# write plnik files for filtered data.
+write.plink(
+  file.base = "data/geno.qc",
+  snps = obj$genotypes,
+  pedigree = obj$fam$pedigree,
+  id = obj$fam$member,
+  father = obj$fam$father,
+  mother = obj$fam$mother,
+  chromosome = obj$map$chromosome,
+  genetic.distance = obj$map$cM,
+  position = obj$map$position,
+  allele.1 = obj$map$allele.1,
+  allele.2 = obj$map$allele.2,
+  sex = clinical$sex,
+  phenotype = clinical$CAD + 1
+)
+```
+
+# Population structure. 
+
+It is possible to run PCA inside R, but given the large file size. Usually this is done by running plink from the command line. 
+
+```{bash, eval = F}
+plink -bfile data/geno.qc --pca --out output/pca
+```
+
+Then in R, we read in PCs and plot.
+
+```{r PCA}
+## read plink calculated PCs
+pcplink = read.table("output/pca.eigenvec",header=F, as.is=T)
+names(pcplink) = c("FID","IID",paste0("PC", c(1:(ncol(pcplink)-2))) )
+
+## plot PC1 vs PC2
+plot(pcplink$PC1, pcplink$PC2)
+
+## plot variance explained by PCs
+eigen = read.table("output/pca.eigenval",header=F, as.is=T)[,1]
+plot(1:length(eigen), eigen/nrow(pcplink), type = 'b', ylab = 'Proportion of variance explained', xlab = 'PC')
+```
+
+# Association testing
+
+Run logistic regression using plink, adjusting for PCs. Run the following from command line. 
+```{bash, eval = F}
+plink --bfile data/geno.qc --logistic --pheno data/penncath.csv --pheno-name CAD --covar output/pca.eigenvec --covar-number 1-4 --out output/asso
+```
+
+Read results into R and plot
+```{r plotres}
+res <- fread('output/asso.assoc.logistic')
+res <- res[res$TEST == "ADD",]
+source("code/qqunif.R")
+qqunif(res$P, mlog10_p_thres=12)
+```
+
+Manhattan plot.
+```{r plotmanh}
+bim <- fread('data/geno.qc.bim')
+# format data to have readable labels. 
+manh_data <- data.frame(
+    SNP = res$SNP,
+    P = res$P
+  ) %>%
+  left_join(bim, by = c("SNP" = "V2")) %>%
+  rename(
+    CHR = V1, 
+    BP = V4
+  ) # recall that 'bim' files have a standardized format, so the column order is 
+# always the same 
+library(qqman)
+manh_plot <- manhattan(manh_data, ylim = c(0, 10), annotatePval = 5e-6)
+```
+
+
+# Citation
+
+Credits go to: https://github.com/pbreheny/adv-gwas-tutorial/tree/master.  
+https://yosuketanigawa.com/posts/2020/09/PLINK2  
+https://hakyimlab.github.io/hgen471/L6-population-structure.html
