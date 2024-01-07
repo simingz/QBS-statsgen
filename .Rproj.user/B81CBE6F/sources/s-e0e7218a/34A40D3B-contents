@@ -10,4 +10,6 @@ editor_options:
 
 QBS 148 Introduction to statistical genetics
 
-[Exercise 1: GWAS](e1-gwas.html)
+[Exercise 1: run a GWAS](e1-gwas.html)
+
+[Exercise 1: GWAS power](e1-gwas-power.html)

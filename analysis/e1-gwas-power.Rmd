@@ -1,0 +1,173 @@
+---
+title: "e1-GWAS-power"
+author: "Siming Zhao"
+date: '2024-01-07'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Before the class install R package `pwr`, `tidyverse`
+```{r, eval = F}
+install.packages("pwr")
+install.packages("tidyverse")
+```
+
+## Workflow overview
+
+In this vignette, we'd like to:
+
+1. Write a simulator to simulate genotype and phenotype under some pre-specified model.
+2. Simulate genotype and phenotype using the simulator under the null and alternative.
+3. Perform certain hypothesis test. 
+4. Calculate the power of the test.
+
+Consider a single locus, its genotype is $X$. We pre-specify the model for continuous trait $Y$ and genotype $X$ as
+
+$$Y = \beta X + \epsilon, \epsilon ~ N(0, \sigma_\epsilon^2)$$
+where we assume 
+
+* genotype of this locus follows Hardy-Weinberg equilibrium with a pre-specified minor allele frequency. 
+* trait is normalized to variance 1. 
+
+## Phenotype-genotype simulator
+
+To simulate genotype, we assume the locus is bialleilic and each individual is diploid. So that $X \sim Binomial(2, f)$ with $f$ as minor allele frequency (here we encode minor allele as 1 and major allele as 0).  with the linear model for simulate $Y$ above, this basically means we are simulating $Y$ under the additive model.
+
+Given genotype, to simulate phenotype, we need to know $\beta$ and $\sigma_\epsilon^2$.
+
+```{r phenotype_genotype}
+library(tidyverse)
+simulate_genotype = function(maf, num_individuals, num_replicates) {
+  # maf: minor allele frequency
+  # num_individuals: the number of individuals in each replicates
+  # num_replicates: the number of replicates
+  # it returns a matrix with num_individuals rows and num_replicates columns
+  genotype = matrix( 
+    rbinom(num_individuals * num_replicates, 2, maf), 
+    nrow = num_individuals, 
+    ncol = num_replicates 
+  )
+  return(genotype)
+}
+simulate_phenotype = function(genotype, beta, sig2epsi) {
+  # genotype: each column is one replicate 
+  # beta: effect size of the linear model
+  # sig2epsi: the variance of the noise term
+  num_individuals = nrow(genotype)
+  num_replicates = ncol(genotype)
+  epsilon = matrix( 
+    rnorm(num_individuals * num_replicates, mean = 0, sd = sqrt(sig2epsi)), 
+    nrow = num_individuals, 
+    ncol = num_replicates 
+  )
+  phenotype = genotype * beta + epsilon
+  return(phenotype)
+}
+
+linear_model_simulator = function(num_replicates, num_individuals, maf, beta, sig2epsi) {
+  # simulate genotype
+  X = simulate_genotype(maf, num_individuals, num_replicates)
+  
+  # simulate phenotype given genotype and model parameters
+  Y = simulate_phenotype(X, beta, sig2epsi)
+  return(list(Y = Y, X = X))
+}
+```
+
+## Run the simulator under the null and alternative
+
+Here we simulate 1000 individuals per replicate and 100 replicates in total. With parameters:
+
+* Minor allele frequency is 0.3. 
+* effect size ($\beta$) of the minor allele 0.05. Effect size is the coefficient in a regression model which measures the regression effect of the locus per copy of the variant allele.
+* Variance of residual ($\sigma_\epsilon^2$) = 1.
+
+```{r run_simulator}
+# specify paramters
+nindiv = 1000
+nreplicate = 5000
+maf = 0.30
+b = 0.05
+sig2e = 1
+
+# run simulator 
+## under the alternative
+data_alt = linear_model_simulator(nreplicate, nindiv, maf, 0.05, sig2e)  
+## under the null
+data_null = linear_model_simulator(nreplicate, nindiv, maf, 0, sig2e)  
+```
+
+
+## Perform hypothesis test
+
+The following chunk of R code implement hypothesis test procedure based on linear regression. Essentially, the R function `calcz` takes genotype `X` and `Y` and returns test statistic z-score. 
+
+```{r hypothesis_test}
+runassoc = function(X,Y)
+{
+  pvec = rep(NA,ncol(X))
+  bvec = rep(NA,ncol(X))
+  for(ss in 1:ncol(X))
+  {
+    x = X[,ss]
+    y = Y[,ss]
+    fit = lm(y~x)
+    pvec[ss] = summary(fit)$coefficients[2,4]  
+    bvec[ss] =  summary(fit)$coefficients[2,1]  
+  }
+  list(pvec=pvec, bvec=bvec)
+}
+
+p2z = function(b,p)
+{
+  ## calculate zscore from p-value and sign of effect size
+  sign(b) * abs(qnorm(p/2))
+}
+
+calcz = function(X,Y)
+{
+  tempo = runassoc(X,Y)
+  p2z(tempo$bvec,tempo$pvec)
+}
+```
+
+Now that we can calculate test statistics under the null and alternative.
+
+```{r calc_test_statistic}
+Zalt = calcz(data_alt$X, data_alt$Y)
+Znull = calcz(data_null$X, data_null$Y)
+
+tibble(Y = c(Zalt,Znull), type=c(rep("alt",length(Zalt)),rep("null",length(Znull))) ) %>% ggplot(aes(Y,fill=type)) + geom_density(color=NA,alpha=0.6) + theme_bw(base_size = 15)
+
+```
+
+## Calculate power
+```{r}
+
+## define significance level
+
+alpha = 0.01
+
+## find threshold for rejection; we want P(Znull > alpha/2) two-sided
+
+threshold = quantile(Znull, 1 - alpha/2)
+
+## calculate proportion of Zalt above threshold
+
+mean(Zalt > threshold)
+```
+
+## check with pwr.r.test function
+
+```{r}
+library(pwr)
+calc_r = function(b,maf,sdy) {sdx = sqrt(2 * maf * (1-maf)); sdx * b * sdy}
+r = calc_r(b=b,maf=maf,sdy= sqrt(sig2e + b**2*2*maf*(1-maf)))
+pwr.r.test(n = nindiv, r= r, sig.level = alpha)
+```
+
+# Reference
+Credits go to https://hakyimlab.github.io/hgen471/L4-power.html.
