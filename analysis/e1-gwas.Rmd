@@ -44,7 +44,7 @@ Download and unzip/untar the data; you can read the paper as well if you wish:
 * [Paper](http://www.ncbi.nlm.nih.gov/pubmed/21239051)
 
 
-The process this data for this tutorial (the orginal ones have a split chromosome issue)
+Then process this data for this tutorial (the original ones have a split chromosome issue)
 
 In command line run this:
 
@@ -52,7 +52,7 @@ In command line run this:
 plink -bfile data/penncath --make-bed --out data/geno
 ```
 
-If your plink is installed elsewhere, e.g. in `/bin` then you need to run it like `/bin/plink`. On discovery, plink is already installed. you can do `module load plink` to load plink then run the command above.
+If your plink is installed elsewhere, e.g. in `/bin` then you need to run it like `/bin/plink`. 
 
 
 # File formats
@@ -222,6 +222,8 @@ write.plink(
 
 It is possible to run PCA inside R, but given the large file size. Usually this is done by running plink from the command line. 
 
+Create a folder called `output` first. 
+
 ```{bash, eval = F}
 plink -bfile data/geno.qc --pca --out output/pca
 ```
@@ -243,9 +245,21 @@ plot(1:length(eigen), eigen/nrow(pcplink), type = 'b', ylab = 'Proportion of var
 
 # Association testing
 
-Run logistic regression using plink, adjusting for PCs. Run the following from command line. 
+Run logistic regression using plink, adjusting for PCs. We will need to modify the original `penncath.csv` a bit to conform with [plink phenotype file](https://www.cog-genomics.org/plink/1.9/input#pheno) format:
+
+```{R, eval = T}
+clinical <- data.table::fread('data/penncath.csv', header = T)
+colnames(clinical)[1] <- "FID"  # the first two column names have to be "FID and "IID" to serve as phenotype files for plink
+clinical$IID <- 1
+clinical <- clinical[, c("FID", "IID", "CAD", "sex", "age","tg","hdl","ldl")]
+clinical$CAD <- clinical$CAD + 1 # in plink phenotype file, 0 is missing value, 2 is case, 1 is control for case-control study design.
+write.table(clinical, file = "data/penncath4plink.csv", row.names = F, col.names = T, quote = F)
+head(clinical)
+```
+
+Run the following from command line. 
 ```{bash, eval = F}
-plink --bfile data/geno.qc --logistic --pheno data/penncath.csv --pheno-name CAD --covar output/pca.eigenvec --covar-number 1-4 --out output/asso
+plink --bfile data/geno.qc --logistic --pheno data/penncath4plink.csv --pheno-name CAD --covar output/pca.eigenvec --covar-number 1-4 --out output/asso
 ```
 
 Read results into R and plot

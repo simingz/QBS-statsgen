@@ -30,7 +30,7 @@ $$Y = \beta X + \epsilon, \epsilon ~ N(0, \sigma_\epsilon^2)$$
 where we assume 
 
 * genotype of this locus follows Hardy-Weinberg equilibrium with a pre-specified minor allele frequency. 
-* trait is normalized to variance 1. 
+* residual variance 1. 
 
 ## Phenotype-genotype simulator
 
