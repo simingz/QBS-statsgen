@@ -1,0 +1,142 @@
+---
+title: "Polygenic risk score"
+author: "Siming Zhao"
+date: '2024-01-21'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Before the Class
+
+* Install GCTA
+
+The GCTA software can be downloaded from https://yanglab.westlake.edu.cn/software/gcta/#Download
+
+This is the original paper for GCTA: Yang et al. (2011) GCTA: a tool for Genome-wide Complex Trait Analysis. Am J Hum Genet. 88(1): 76-82. [PubMed ID: 21167468]. This is a tool widely used to estimate and partition complex trait variation with large GWAS data sets.
+
+* Download data
+
+From here https://rcweb.dartmouth.edu/Szhao/QBS148-statsgen/e2/. 
+
+## Data used in this analysis
+
+* Genotype data
+The genotype data is given plink1 format: `oz.fam`, `oz.bim`, `oz.bed`
+
+Pay attention to the .fam file
+```{bash, fam}
+head data/e2/oz.fam
+```
+The .fam file has 6 columns: Family ID, Individual ID, Fathers ID (0=missing), Mothers ID (0=missing), Sex (1=M, 2=F), Phenotype (-9=missing). 
+
+* Phenotype data
+
+```{bash, pheno}
+head data/e2/ozht.phen
+```
+
+This file contains 3 columns: Family ID, Individual ID, Height (in cm)
+
+* Covariates file
+
+```{bash, cov}
+head data/e2/ozht.covar
+head data/e2/ozht.qcovar
+```
+We have two covariates file, one for categorical covariates `ozht.covar`
+This file contains 8 columns: Family ID, Individual ID, Age, Sex (1=M,2=F), and 4 genetic principle components which we will use to account for the effects of ethnicity in our analyses.
+
+* Summary statistics file
+
+```{bash, prs}
+head data/e2/weights.prs
+```
+
+In this file, A1 is the effect allele.
+
+## Compute PRS using the C+PT strategy.
+
+The first method is classically denoted as “Clumping + P-value Thresholding (C+PT)”. This method is also abbreviated as P+T or C+T in certain publications. In brief, the principle of this method is compare various sets of uncorrelated SNPs (e.g., maximum squared pairwise correlation between allele counts at SNPs in the selected set is r2≤0.1
+) that are associated with the trait / disease as certain p-value threshold (e.g., p<0.01). We then select the set of SNPs that yields the largest prediction accuracy with the trait / disease of interest in a validation set. This method is broadly used because of it simplicity but may not often yield the largest accuracy. In this practical, we will use PLINK and R to determine these optimal sets of SNPs. PGS will be calculated using marginal/GWAS SNP effects as weights.
+
+
+**Step 1**: clump and select SNPs.
+Run from command line:
+
+```{bash, eval = F}
+window_kb=1000 # 1000 kb = 1 Mb window
+r2_thresh=0.1  # LD threshold for clumping
+pv_thresh=5e-8
+
+plink --bfile data/e2/oz \
+      --clump data/e2/weights.prs \
+      --clump-kb ${window_kb} \
+      --clump-p1 ${pv_thresh} \
+      --clump-p2 ${pv_thresh} \
+      --clump-r2 ${r2_thresh} \
+      --out output/c-pt_rsq_${r2_thresh}_p_below_${pv_thresh}
+```
+
+How many SNPs are picked? 
+
+**Step 2**: calculate the PGS with PLINK using the --score command (help: https://www.cog-genomics.org/plink/1.9/score). 
+
+```{bash, eval = F}
+plink --bfile data/e2/oz\
+      --score data/e2/weights.prs 1 4 6 header sum \
+      --extract output/c-pt_rsq_${r2_thresh}_p_below_${pv_thresh}.clumped \
+      --out output/c-pt_rsq_${r2_thresh}_p_below_${pv_thresh}.pred
+```
+
+Assuming that the 1rt column is the SNP ID; 4th column is the effective allele information; the 6th column is the effect size estimate; and that the file contains a header. We use Sum of the effects. See [here](https://www.cog-genomics.org/plink/1.9/score) for plink documentation.
+
+Take a look at the output:
+
+```{bash}
+head output/c-pt_rsq_0.1_p_below_5e-8.pred.profile
+```
+
+We will use linear mixed model to assess r2 of our PRS score as our samples contains related individuals. (If all individuals are unrelated, we can just use linear regression.)
+First prepare covariates file, the last column is the PRS score
+```{r}
+qcovar <- read.table("data/e2/ozht.qcovar", header = T)
+prs <- read.table("output/c-pt_rsq_0.1_p_below_5e-8.pred.profile", header = T)
+all=merge(qcovar, prs,  by=c("IID", "FID"))
+write.table(all[,c("FID", "IID", "age", "PC1", "PC2", "PC3", "PC4", "SCORESUM")], "output/ozht.prs_rsq_0.1_p_below_5e-8.qcovar", quote = F, row.names = F)
+```
+Then run GCTA to estimate fixed effect size for PRS score. 
+
+From command line run this:
+
+```{bash, eval=F}
+gcta --bfile data/e2/oz --make-grm --out output/ozGCTA
+gcta --reml\
+     --reml-est-fix\
+     --grm output/ozGCTA\
+     --pheno data/e2/ozht.phen\
+     --qcovar output/ozht.prs_rsq_${r2_thresh}_p_below_${pv_thresh}.qcovar\
+     --covar data/e2/ozht.covar\
+     --out output/ozht.prs_rsq_${r2_thresh}_p_below_${pv_thresh}.reml
+     
+grep X_7 output/ozht.prs_rsq_${r2_thresh}_p_below_${pv_thresh}.reml.log > output/ozht.prs_rsq_${r2_thresh}_p_below_${pv_thresh}.effect.txt
+```
+Note X_7 is the variable for PRS score in this example. The order depends on the order in the `--covar` and `--qcovar` files. 
+
+Let's calculate r2 and p value for this PRS score back in R
+```{r}
+phen <- read.table("data/e2/ozht.phen", header = T)
+all = merge(all, phen, by=c("IID", "FID"))
+res <- read.table("output/ozht.prs_rsq_0.1_p_below_5e-8.effect.txt", header = F)
+betahat <- res[1,2]
+sehat <- res[1,3]
+r2 <- (betahat/sd(all$ht, na.rm = T)*sd(all$SCORESUM, na.rm = T))**2
+pval <- (1-pt(q=betahat/sehat, df = 1894, lower.tail = T))*2
+cat("r2: ", r2, "; p value: ", pval)
+```
+
+
+
+

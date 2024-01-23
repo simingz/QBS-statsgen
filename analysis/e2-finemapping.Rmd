@@ -1,0 +1,86 @@
+---
+title: "Fine-mapping"
+author: "Siming Zhao"
+date: '2024-01-22'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Before the class
+
+Install R package "susieR"
+
+# Explore the data we will use the analysis
+```{r}
+rm(list=ls())
+library(susieR)
+data(N3finemapping)
+attach(N3finemapping)
+```
+
+```{r}
+names(N3finemapping)
+```
+The genotype matrix is `X`, The phenotype matrix is `Y`.  
+
+We focus on the first trait, let
+
+```{r}
+y = Y[,1]
+b = true_coef[,1]
+which(b != 0)
+```
+
+Let's perform a univariate analysis
+
+```{r}
+sumstats <- univariate_regression(X, y)
+z_scores <- sumstats$betahat / sumstats$sebetahat
+log10p <- -log10(pchisq(z_scores^2,1,lower.tail=F))
+susie_plot(z_scores,y="z",b=b)
+```
+
+# Fine mapping using individual level data
+
+```{r}
+fitted <- susie(X, y, L = 10)
+```
+
+By default, susie function computes 95% CS each containing one effect variable,
+```{r}
+print(fitted$sets)
+```
+
+Plot Posterior Inclusion Probability
+```{r}
+susie_plot(fitted, y="PIP", b=b, add_legend=T)
+```
+
+Choice of prior effect size: 
+
+```{r}
+fitted2 = susie(X, y, L = 10, estimate_prior_variance = FALSE, scaled_prior_variance = 0.2)
+susie_plot(fitted2, y='PIP', b=b, add_legend=T)
+```
+
+```{r}
+fitted2 = susie(X, y, L = 10, estimate_prior_variance = FALSE, scaled_prior_variance = 0.001)
+susie_plot(fitted2, y='PIP', b=b, add_legend=T)
+```
+
+# Fine-mapping with summary statistics via susie_rss
+
+z-scores are provided and we can compute R from X.
+
+```{r}
+R <- cor(X)
+fitted_rss <- susie_rss(z_scores, R, L = 10)
+plot(fitted$pip, fitted_rss$pip, ylim=c(0,1))
+```
+
+# Credit 
+
+Credit to Gao Wang: https://statgenetics.github.io/statgen-courses/notebooks/finemapping.html#Fine-mapping-with-summary-statistics-via-susie_rss-6

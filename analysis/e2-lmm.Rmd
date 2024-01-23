@@ -1,0 +1,132 @@
+---
+title: "Genetic relationship matrix"
+author: "Siming Zhao"
+date: '2024-01-21'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Before the class
+
+* Download data
+
+Download from here: https://rcweb.dartmouth.edu/Szhao/QBS148-statsgen/e2/. 
+
+* Plink
+
+We have used plink in our first exercise class. 
+
+* R packages
+
+Install `ggplot2`, `data.table`, `tidyverse` if you don't have them.
+
+# Data used in this analysis
+
+* Genotype data
+The genotype data is given plink1 format: `oz.fam`, `oz.bim`, `oz.bed`
+
+Pay attention to the .fam file
+```{bash, fam}
+head data/e2/oz.fam
+```
+The .fam file has 6 columns: Family ID, Individual ID, Fathers ID (0=missing), Mothers ID (0=missing), Sex (1=M, 2=F), Phenotype (-9=missing). 
+
+Now we can see there are related individuals in this cohort.
+
+
+# Get and plot GRM
+
+Use plink to get GRM
+
+```{bash, eval=F}
+plink --bfile data/e2/oz --make-grm-gz --out output/oz
+```
+This will generate  `ozbim.grm.gz` and  `ozbim.grm.id` files in the `output` folder. Note: you will need to create the `output` folder first if you don't have one.
+
+To visualize this:
+```{r}
+library("tidyverse")
+# these are plot functions: 
+tileplot <- function(mat)
+{
+  mat = data.frame(mat)
+  mat$Var1 = factor(rownames(mat), levels=rownames(mat)) ## preserve rowname order
+  melted_mat <- gather(mat,key=Var2,value=value,-Var1)
+  melted_mat$Var2 = factor(melted_mat$Var2, levels=colnames(mat)) ## preserve colname order
+  rango = range(melted_mat$value)
+  pp <- ggplot(melted_mat,aes(x=Var1,y=Var2,fill=value)) + geom_tile() ##+scale_fill_gradientn(colours = c("#C00000", "#FF0000", "#FF8080", "#FFC0C0", "#FFFFFF", "#C0C0FF", "#8080FF", "#0000FF", "#0000C0"), limit = c(-1,1))
+  pp
+}
+
+grmgz2mat = function(grmhead)
+{
+  ## given plink like header, it reads thd grm file and returns matrix of grm
+  grm = read.table(paste0(grmhead,".grm.gz"),header=F)
+  grmid = read.table(paste0(grmhead,".grm.id"),header=F)
+  grmat = matrix(0,max(grm$V1),max(grm$V2))
+  rownames(grmat) = grmid$V2
+  colnames(grmat) = grmid$V2
+  ## fill lower matrix of GRM
+  grmat[upper.tri(grmat,diag=TRUE)]= grm$V4
+  ## make upper = lower, need to subtract diag
+  grmat + t(grmat) - diag(diag(grmat))
+}
+```
+
+
+```{r}
+## read grm calculated in plink into R matrix
+grmat = grmgz2mat("output/oz")
+```
+We can look at the distribution of diagonal values (ie the covariation of a person with themselves) using the following code. Usually we would expect the values to be close to 1. This teaching example only includes ~10,000 snps so there is more variation here than we would usually expect.
+
+```{r}
+hist(diag(grmat), breaks=100)
+```
+
+
+
+For off diagnal values, plot distribution. The off-diagonal elements of the GRM are two times the kinship coefficient. Related samples are inferred based on the range of estimated kinship coefficients = : >0.354, 0.354-0.177, 0.177-0.0884, and 0.0884-0.0442 that corresponds to duplicate/MZ twin, 1st-degree, 2nd-degree, and 3rd-degree relationships, respectively.
+
+Plot distribution of kinship coefficient:
+
+```{r}
+grmat.off <- c(grmat[upper.tri(grmat)])
+hist(grmat.off[which(grmat.off>0.05)]/2, breaks=100, xlim=c(0.05,0.3))
+```
+Plot GRM for a few families:
+
+```{r}
+fam = read.table("data/e2/oz.fam") # second column is IID (individual ID)
+head(fam, n= 6)
+ind = fam[1:6,2]
+print(ind)
+```
+There are three families: 1400, 570, and 3413. Each family has two individuals.
+
+```{r}
+tileplot(grmat[ind,ind]/2)
+```
+
+
+
+<!-- ## Use GCTA to estimate SNP heritability -->
+
+<!-- See [here](https://yanglab.westlake.edu.cn/software/gcta/#MLMA) for documentation to use GCTA to run linear mixed model based GWAS. The --mlma option analysis would be similar as that implemented in other software tools such as EMMAX, FaST-LMM and GEMMA. The results will be saved in the *.mlma file. -->
+
+<!-- ```{bash} -->
+<!-- <!-- gcta --bfile data/e2/oz --make-grm --out ozGCTA --> -->
+<!-- <!-- gcta --reml --grm ozGCTA --pheno data/e2/ozht.phen --qcovar data/e2/ozht.qcovar --covar data/e2/ozht.covar --out output/ozht.reml --> -->
+<!-- ``` -->
+
+
+# Credits
+
+GRM visualization from Haky Im: https://hakyimlab.github.io/hgen471/L8-GRM.html
+Data from https://www.colorado.edu/ibg/international-workshop/2022-international-statistical-genetics-workshop/syllabus/polygenic-scores
+
+
+
