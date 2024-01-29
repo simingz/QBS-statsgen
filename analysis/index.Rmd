@@ -14,7 +14,7 @@ QBS 148 Introduction to statistical genetics
 
 [Exercise 1-b: GWAS power](e1-gwas-power.html)
 
-[Exercise 2-a: Linear mixed model](e2-lmm.html)
+[Exercise 2-a: Genetic relationship matrix](e2-lmm.html)
 
 [Exercise 2-b: polygenic risk score](e2-prs.html)
 
