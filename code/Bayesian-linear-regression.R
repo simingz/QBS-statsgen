@@ -1,8 +1,5 @@
-# Linear Regression
-# R coding for Gibbs sampling
-
-# Example: QTL affecting a specific quantitative trait
-
+# Code from https://faculty.washington.edu/kenrice/sisgbayes/
+# model
 # y = Xb + e
 
 y<-matrix(c(95.9, 108.0, 96.5, 92.9, 101.0, 94.5, 93.7, 89.8,
