@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Siming Zhao" />
+
+
+<title>Exercise-3-eQTL calling</title>
+
+<script src="site_libs/header-attrs-2.21/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/readable.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/master/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">QBS-statsgen</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/simingz/QBS-statsgen">source</a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Exercise-3-eQTL calling</h1>
+<h4 class="author">Siming Zhao</h4>
+<h4 class="date">2024-2-1</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2024-02-12
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 1
+</p>
+<p>
+<strong>Knit directory:</strong> <code>QBS-statsgen/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version
+1.6.2). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges">
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted
+changes </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguncommittedchanges"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The R Markdown is untracked by Git. To know which version of the R
+Markdown file created these results, you’ll want to first commit it to
+the Git repo. If you’re still working on the analysis, you can ignore
+this warning. When you’re finished, you can run
+<code>wflow_publish</code> to commit the R Markdown file and build the
+HTML.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231230code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231230)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231230code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231230)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomsimingzQBSstatsgentree2a4438ca241f65b2ceb9494db8d94081f9a91cbetargetblank2a4438ca">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/simingz/QBS-statsgen/tree/2a4438ca241f65b2ceb9494db8d94081f9a91cbe" target="_blank">2a4438c</a>
+</a>
+</p>
+</div>
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcomsimingzQBSstatsgentree2a4438ca241f65b2ceb9494db8d94081f9a91cbetargetblank2a4438ca"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version
+<a href="https://github.com/simingz/QBS-statsgen/tree/2a4438ca241f65b2ceb9494db8d94081f9a91cbe" target="_blank">2a4438c</a>.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rproj.user/B81CBE6F/bibliography-index/
+    Ignored:    .Rproj.user/B81CBE6F/ctx/
+    Ignored:    .Rproj.user/B81CBE6F/pcs/
+    Ignored:    .Rproj.user/B81CBE6F/presentation/
+    Ignored:    .Rproj.user/B81CBE6F/profiles-cache/
+    Ignored:    .Rproj.user/B81CBE6F/sources/per/
+    Ignored:    .Rproj.user/B81CBE6F/tutorial/
+    Ignored:    .Rproj.user/shared/notebooks/1C2AC29C-e1-gwas-power/
+    Ignored:    .Rproj.user/shared/notebooks/1EB0B2DC-e1-gwas/1/s/ce0r78nx8keuu/
+    Ignored:    .Rproj.user/shared/notebooks/1EB0B2DC-e1-gwas/1/s/csetup_chunk/
+    Ignored:    .Rproj.user/shared/notebooks/1EB0B2DC-e1-gwas/1/s/czxn6jf8lsykc/
+    Ignored:    .Rproj.user/shared/notebooks/26ED8139-e2-prs/
+    Ignored:    .Rproj.user/shared/notebooks/6834E257-e3-qtlmapping/
+    Ignored:    .Rproj.user/shared/notebooks/7D0F50D6-basic_eqtl_guide/
+    Ignored:    .Rproj.user/shared/notebooks/BC66D613-e2-lmm/
+    Ignored:    .Rproj.user/shared/notebooks/FCFC3BD0-e2-finemapping/
+    Ignored:    data/e2/
+    Ignored:    data/e3/
+    Ignored:    output/
+
+Untracked files:
+    Untracked:  analysis/basic_eqtl_guide.Rmd
+    Untracked:  analysis/e3-qtlmapping.Rmd
+
+Unstaged changes:
+    Modified:   .Rproj.user/B81CBE6F/persistent-state
+    Modified:   .Rproj.user/B81CBE6F/sources/prop/4C8B7780
+    Modified:   .Rproj.user/B81CBE6F/sources/prop/INDEX
+    Modified:   .Rproj.user/shared/notebooks/paths
+    Modified:   analysis/index.Rmd
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+There are no past versions. Publish this analysis with
+<code>wflow_publish()</code> to start tracking its development.
+</p>
+<hr>
+</div>
+</div>
+</div>
+<div id="before-the-class" class="section level1">
+<h1>Before the class</h1>
+<ul>
+<li>Download data.</li>
+</ul>
+<p>Download from <a
+href="https://rcweb.dartmouth.edu/Szhao/QBS148-statsgen/e3/"
+class="uri">https://rcweb.dartmouth.edu/Szhao/QBS148-statsgen/e3/</a>.
+It contains gene expression and genotype data from the GEUVADIS dataset.
+We only used 95 <a
+href="https://www.internationalgenome.org/data-portal/population/FIN">FIN</a>
+individuals. Only genotype of SNPs and expression for genes on chr22 are
+used in this demo.</p>
+<ul>
+<li>Install R packages, <code>MatrixQTL</code>, <code>dplyr</code>.</li>
+</ul>
+<pre class="r"><code>install.packages(&quot;MatrixEQTL&quot;)
+install.packages(&quot;dplyr&quot;)</code></pre>
+</div>
+<div id="explore-the-data" class="section level1">
+<h1>Explore the data</h1>
+<p>Load the data:</p>
+<pre class="r"><code>expr = read.table(&quot;data/e3/transformed_expression.fin.chr22.txt&quot;, row.names = 1)
+snps0 = read.table(&quot;data/e3/genotype.chr22.fin.txt&quot;, header = T)
+snps &lt;- snps0[, -1]
+rownames(snps) &lt;- snps0[, 1]
+snps &lt;- t(snps)</code></pre>
+<p>Load gene and snp information.</p>
+<pre class="r"><code>gene &lt;- read.table(&quot;data/e3/gene.chr22.loc.txt&quot;, header = T)
+genotype &lt;- read.table(&quot;data/e3/snp.chr22.loc.txt&quot;, header = T)
+
+head(gene)</code></pre>
+<pre><code>             geneid   chr       s1       s2
+1 ENSG00000233866.1 chr22 16062157 16063236
+2 ENSG00000229286.1 chr22 16076052 16076172
+3 ENSG00000235265.1 chr22 16084249 16084826
+4 ENSG00000223875.1 chr22 16100517 16124973
+5 ENSG00000215270.3 chr22 16122720 16123768
+6 ENSG00000206195.4 chr22 16147979 16193004</code></pre>
+<pre class="r"><code>head(genotype)</code></pre>
+<pre><code>                  snp   chr      pos
+1 22_16494187_C_A_b37 chr22 16494187
+2 22_16494682_G_A_b37 chr22 16494682
+3 22_16504399_C_T_b37 chr22 16504399
+4 22_16527116_C_T_b37 chr22 16527116
+5 22_16870957_C_T_b37 chr22 16870957
+6 22_16890307_C_T_b37 chr22 16890307</code></pre>
+<p>To get a basic idea of the data</p>
+<pre class="r"><code>head(expr)[,1:5]</code></pre>
+<pre><code>        ENSG00000249263.2 ENSG00000224688.1 ENSG00000075240.12
+HG00171       0.259634768          5.278079           4.564746
+HG00173       0.006120734          4.671357           2.585686
+HG00174       0.155647331          4.219469           3.401698
+HG00176       0.111773474          4.613239           4.795421
+HG00177       0.617053004          4.761211           2.743071
+HG00178       0.205497860          3.880009           4.773510
+        ENSG00000099937.6 ENSG00000099998.12
+HG00171         0.3862190        -0.00740390
+HG00173         0.5421739         0.22562020
+HG00174         0.2946133         0.02929838
+HG00176         0.4858102         0.08549654
+HG00177         0.3661320         0.02403985
+HG00178         0.4383820         0.05707943</code></pre>
+<pre class="r"><code>dim(expr)</code></pre>
+<pre><code>[1]  95 633</code></pre>
+<pre class="r"><code>head(snps)[,1:5]</code></pre>
+<pre><code>        22_16494187_C_A_b37 22_16494682_G_A_b37 22_16504399_C_T_b37
+HG00171                   0                   0                   1
+HG00173                   0                   0                   1
+HG00174                   0                   0                   2
+HG00176                   0                   0                   2
+HG00177                   0                   0                   2
+HG00178                   0                   0                   1
+        22_16527116_C_T_b37 22_16870957_C_T_b37
+HG00171                   0                   0
+HG00173                   0                   0
+HG00174                   0                   0
+HG00176                   0                   0
+HG00177                   0                   0
+HG00178                   0                   0</code></pre>
+<pre class="r"><code>dim(snps)</code></pre>
+<pre><code>[1]    95 36494</code></pre>
+<pre class="r"><code>boxplot(t(expr)[,1:5], ylim = c(-10,40), main = &quot;distribution of expression for samples 1-5&quot;)</code></pre>
+<p><img src="figure/e3-qtlmapping.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Minor allele frequency: the term MAF implies that the allele for
+which we return the measure has to be the minor (= less common) allele.
+This means that the MAF is smaller than 0.5 by definition.</p>
+<p>So let’s now calculate the MAF for all SNPs among all individuals and
+correct the returned values so that the value is always given in respect
+to the minor allele. Then we’ll plot a histogram of the MAFs of all
+SNPs</p>
+<pre class="r"><code>maf = colMeans(snps[,-1])/2
+
+# To ensure we actually get the MAF this needs to be inverted.
+maf &lt;- pmin(maf, 1-maf)
+names(maf) &lt;- colnames(snps[,-1])
+
+hist(maf, main = &quot;Distribution of MAF.&quot;, col = &quot;steelblue&quot;)</code></pre>
+<p><img src="figure/e3-qtlmapping.Rmd/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="data-processing" class="section level1">
+<h1>Data processing</h1>
+<p>In practice, there will be extensive QCs for genotping and
+normalization etc for expression data. Genotype and expression data come
+in all sorts of flavours and preprocessing of this data needs to be done
+rather carefully. In this short introduction it is not possible to cover
+this topic in detail. Here, we are assuming the SNP genotype and
+expression data has passed QC and expression has been normalized. Some
+additional processing procedures for eQTL mapping:</p>
+<div id="filtering-snps-by-maf" class="section level2">
+<h2>Filtering SNPs by MAF</h2>
+<p>In an eQTL study often a minimum MAF is required. Since MAF
+essentially reflects how often an allele has been observed in a
+population, it also defines how often the gene expression levels have
+been observed for heterozygous and homozygous alleles.</p>
+<p>We will filter out SNPs with MAF &lt; 0.05 from this cohort.</p>
+</div>
+<div id="covariates" class="section level2">
+<h2>Covariates</h2>
+<p>There are clinical covariates, such as age, sex. To correct for
+population structure, we should also include genotype PCs. This is
+similar to what we have introduced in <a href="e1-gwas.html">exercise 1:
+performing a GWAS</a>.</p>
+<p>To correct for unmeasured confounders, we could perform PCA on gene
+expression and use PCs as covariates.</p>
+<pre class="r"><code>pca &lt;- prcomp(expr, center=TRUE, scale = TRUE)
+plot(pca)</code></pre>
+<p><img src="figure/e3-qtlmapping.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="a-simple-eqtl-calling-example" class="section level1">
+<h1>A simple eQTL calling example</h1>
+<p>Now we’ll plot the expression levels of the first gene against the
+first SNP, 10th gene against the 10th SNP, 10th gene against the 10th
+SNP, as well as the 10th gene against the 15th SNP, depending on the
+genotypes of the samples by using simple dot plots. We’ll add a bit of
+random noise (jitter) to the genotype data to make it all look more
+comprehensible.</p>
+<p>Match snps and gene expression</p>
+<pre class="r"><code>snps &lt;- snps[rownames(expr),]</code></pre>
+<p>Plot expression vs SNP genotype:</p>
+<pre class="r"><code>par(mfrow=c(1,2))
+
+df &lt;- cbind(snps[,10], expr[,10])
+colnames(df) &lt;- c(&quot;geno&quot;, &quot;expr&quot;)
+boxplot(expr ~ geno, data = df, col = &quot;white&quot;)
+stripchart(expr ~ geno,
+           data = df,
+           method = &quot;jitter&quot;,
+           pch = 19,
+           col = 2:4,
+           vertical = TRUE,
+           add = TRUE)
+
+df &lt;- cbind(snps[,15], expr[,10])
+colnames(df) &lt;- c(&quot;geno&quot;, &quot;expr&quot;)
+boxplot(expr ~ geno, data = df, col = &quot;white&quot;)
+stripchart(expr ~ geno,
+           data = df,
+           method = &quot;jitter&quot;,
+           pch = 19,
+           col = 2:4,
+           vertical = TRUE,
+           add = TRUE)</code></pre>
+<p><img src="figure/e3-qtlmapping.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>To obtain estimates of the genotypic contribution to gene expression
+we fit a simple linear regression model of the form <span
+class="math inline">\(E_i = \beta_0 + \beta G_i + \alpha X_i+
+\epsilon\)</span>, where <span class="math inline">\(E_i\)</span> is the
+vector of gene expression values for gene <span
+class="math inline">\(i\)</span> and <span
+class="math inline">\(G_i\)</span> is the genotype vector for the SNP
+<span class="math inline">\(i\)</span>. <span
+class="math inline">\(X_i\)</span> is the covariates. For this
+demonstration, we will just use the first PC of expression as the only
+covariate. We are interested in the estimate for <span
+class="math inline">\(\beta\)</span> which indicates the change in gene
+expression for each copy of the second allele.</p>
+<p>The p-value indicates the significance of the genetic component in
+the model. Let’s try that for gene 10 with SNP 10 and SNP 15.</p>
+<pre class="r"><code>lm_10_10 = lm(expr[, 10] ~ snps[, 10] + as.numeric(pca$x[,1]))
+summary(lm_10_10)</code></pre>
+<pre><code>
+Call:
+lm(formula = expr[, 10] ~ snps[, 10] + as.numeric(pca$x[, 1]))
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-0.6805 -0.2897 -0.1166  0.1894  2.1598 
+
+Coefficients:
+                       Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)            0.526215   0.059726   8.811 7.26e-14 ***
+snps[, 10]             0.015970   0.092946   0.172   0.8640    
+as.numeric(pca$x[, 1]) 0.008747   0.004743   1.844   0.0684 .  
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+
+Residual standard error: 0.4835 on 92 degrees of freedom
+Multiple R-squared:  0.03584,   Adjusted R-squared:  0.01488 
+F-statistic:  1.71 on 2 and 92 DF,  p-value: 0.1866</code></pre>
+<pre class="r"><code>lm_10_15 = lm(expr[, 10] ~ snps[, 15] + as.numeric(pca$x[,1]))
+summary(lm_10_15)</code></pre>
+<pre><code>
+Call:
+lm(formula = expr[, 10] ~ snps[, 15] + as.numeric(pca$x[, 1]))
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-0.6860 -0.2876 -0.1053  0.1859  2.1554 
+
+Coefficients:
+                        Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)            0.5312957  0.0939233   5.657 1.73e-07 ***
+snps[, 15]             0.0006032  0.0757633   0.008   0.9937    
+as.numeric(pca$x[, 1]) 0.0086111  0.0046777   1.841   0.0689 .  
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+
+Residual standard error: 0.4836 on 92 degrees of freedom
+Multiple R-squared:  0.03553,   Adjusted R-squared:  0.01456 
+F-statistic: 1.694 on 2 and 92 DF,  p-value: 0.1894</code></pre>
+<p>So these two models don’t catch any significant effect of explored
+SNPs and gene expression levels. In fact it is very hard to catch such
+effects by “manually” exploring real-world genomic data, usually
+containing tens or hundreds of thousands SNPs and hundreds or thousands
+gene expressions for large number of samples. Many softwares have been
+developed to perform eQTL mapping efficiently for thousands of snp-gene
+pairs, such as MatrixEQTL, fastQTL, tensorQTL etc.</p>
+</div>
+<div id="fitting-many-eqtl-models-with-matrixeqtl"
+class="section level1">
+<h1>Fitting many eQTL models with MatrixEQTL</h1>
+<p>We’ll be using R’s <code>MatrixEQTL</code> package which is designed
+for fast eQTL analysis on large genomic data sets.
+<code>MatrixEQTL</code> can test for association between genotype and
+gene expression using linear regression with either additive or ANOVA
+genotype effects. The models can include covariates to account for
+factors as population stratification, gender, and clinical variables. It
+also supports models with heteroscedastic and/or correlated errors,
+false discovery rate estimation and separate treatment of local (cis)
+and distant (trans) eQTLs. You can learn more about
+<code>MatrixEQTL</code> <a
+href="http://www.bios.unc.edu/research/genomic_software/Matrix_eQTL/">here</a>.</p>
+<p>To perform an eQTL analysis we don’t only need to know the genotype
+and gene expression values for every sample, but also the genomic
+positions of genes and SNPs. This is necessary to define which SNPs
+should be tested against which genes. For cis-eQTL analyses SNPs in
+proximity to the gene are chosen and for trans-eQTL analyses SNPs
+further away, or on different chromosomes, are taken into account. The
+window in cis-eQTL analysis is commonly chosen to be 500kb-1Mb measured
+from gene’s TSS.</p>
+<div id="prepare-files" class="section level2">
+<h2>Prepare files</h2>
+<pre class="r"><code>  # covariates files
+  covar &lt;- cbind( &quot;PC1&quot;, t(pca$x[,1, drop = F]))
+  colnames(covar)[1] &lt;- &quot;id&quot;
+  write.table(covar, file = &quot;output/eqtl-covariates.txt&quot;, sep = &quot;\t&quot;, row.names = F, col.names = T, quote = F)
+  
+# SNP files, filter out MAF &lt;0.05 SNPs.
+  sid &lt;- names(maf[maf &gt; 0.05])
+  snpf &lt;- read.table(&quot;data/e3/genotype.chr22.fin.txt&quot;, header = T)
+  snpf.filtered &lt;- snpf[snpf$id %in% sid,]
+  snplocf &lt;- read.table(&quot;data/e3/snp.chr22.loc.txt&quot;, header = T)
+  snplocf.filtered &lt;- snplocf[snplocf$snp %in% sid, ]
+  write.table(snpf.filtered, file = &quot;output/genotype.chr22.fin.maf0.05.txt&quot;, sep = &quot;\t&quot;, row.names = F, col.names = T, quote = F)
+  write.table(snplocf.filtered, file = &quot;output/snp.chr22.maf0.05.loc.txt&quot;, sep = &quot;\t&quot;, row.names = F, col.names = T, quote = F)</code></pre>
+</div>
+<div id="run-matrixeqtl" class="section level2">
+<h2>Run MatrixEQTL</h2>
+<pre class="r"><code>  suppressMessages(library(MatrixEQTL))
+  
+  SNP_file_name &lt;-  &quot;output/genotype.chr22.fin.maf0.05.txt&quot;;
+  snps_location_file_name &lt;- &quot;output/snp.chr22.maf0.05.loc.txt&quot;;
+  expression_file_name &lt;- &quot;data/e3/gene_exp.fin.chr22.txt&quot;;
+  gene_location_file_name &lt;- &quot;data/e3/gene.chr22.loc.txt&quot;;
+  covariates_file_name &lt;- &quot;output/eqtl-covariates.txt&quot;;
+  
+  # Output file name
+  output_file_name_cis = &quot;output/MatrixEQTL-cis.txt&quot;;
+  output_file_name_tra = &quot;output/MatrixEQTL-trans.txt&quot;;
+   
+  ## Settings
+  # Linear model to use, modelANOVA, modelLINEAR, or modelLINEAR_CROSS
+  useModel = modelLINEAR; # modelANOVA, modelLINEAR, or modelLINEAR_CROSS
+  
+  # Error covariance matrix
+  # Set to numeric() for identity.
+  errorCovariance = numeric();
+  
+  # Distance for local gene-SNP pairs
+  cisDist = 1e6
+  
+  # Only associations significant at this level will be saved
+  pvOutputThreshold_cis = 1e-5;
+  pvOutputThreshold_tra = 1e-5;
+  
+  
+  ## Load genotype data
+  snps = SlicedData$new();
+  snps$fileDelimiter = &quot;\t&quot;; # the TAB character
+  snps$fileOmitCharacters = &quot;NA&quot;; # denote missing values;
+  snps$fileSkipRows = 1; # one row of column labels
+  snps$fileSkipColumns = 1; # one column of row labels
+  snps$fileSliceSize = 2000; # read file in slices of 2,000 rows
+  snps$LoadFile(SNP_file_name);
+  
+  ## Load gene expression data
+  gene = SlicedData$new();
+  gene$fileDelimiter = &quot;\t&quot;; # the TAB character
+  gene$fileOmitCharacters = &quot;NA&quot;; # denote missing values;
+  gene$fileSkipRows = 1; # one row of column labels
+  gene$fileSkipColumns = 1; # one column of row labels
+  gene$fileSliceSize = 2000; # read file in slices of 2,000 rows
+  gene$LoadFile(expression_file_name);
+  
+  ## Load covariates
+  cvrt = SlicedData$new();
+  cvrt$fileDelimiter = &quot;\t&quot;; # the TAB character
+  cvrt$fileOmitCharacters = &quot;NA&quot;; # denote missing values;
+  cvrt$fileSkipRows = 1; # one row of column labels
+  cvrt$fileSkipColumns = 1; # one column of row labels
+  if(length(covariates_file_name)&gt;0) {
+    cvrt$LoadFile(covariates_file_name);
+  }
+  
+  ## Run the analysis
+  snpspos = read.table(snps_location_file_name, header = TRUE, stringsAsFactors = FALSE);
+  genepos = read.table(gene_location_file_name, header = TRUE, stringsAsFactors = FALSE);
+  
+me = Matrix_eQTL_main(
+  snps = snps,
+  gene = gene,
+  cvrt = cvrt,
+  output_file_name = output_file_name_tra,
+  pvOutputThreshold = pvOutputThreshold_tra,
+  useModel = useModel,
+  errorCovariance = errorCovariance,
+  verbose = FALSE,
+  output_file_name.cis = output_file_name_cis,
+  pvOutputThreshold.cis = pvOutputThreshold_cis,
+  snpspos = snpspos,
+  genepos = genepos,
+  cisDist = cisDist,
+  pvalue.hist = TRUE,
+  min.pv.by.genesnp = FALSE,
+  noFDRsaveMemory = FALSE);
+  
+  me_qq = Matrix_eQTL_main(
+    snps = snps,
+    gene = gene,
+    cvrt = cvrt,
+    output_file_name = output_file_name_tra,
+    pvOutputThreshold = pvOutputThreshold_tra,
+    useModel = useModel,
+    errorCovariance = errorCovariance,
+    verbose = FALSE,
+    output_file_name.cis = output_file_name_cis,
+    pvOutputThreshold.cis = pvOutputThreshold_cis,
+    snpspos = snpspos,
+    genepos = genepos,
+    cisDist = cisDist,
+    pvalue.hist = &quot;qqplot&quot;,
+    min.pv.by.genesnp = FALSE,
+    noFDRsaveMemory = FALSE)
+  
+  cat(&#39;Analysis done in: &#39;, me$time.in.sec, &#39; seconds&#39;, &#39;\n&#39;);</code></pre>
+<pre><code>Analysis done in:  2.394  seconds </code></pre>
+<pre class="r"><code>  head(me$cis$eqtls)</code></pre>
+<pre><code>                 snps              gene statistic       pvalue          FDR
+1 22_45764874_T_C_b37 ENSG00000100376.7  16.12606 1.490974e-28 6.725352e-24
+2 22_45767369_A_G_b37 ENSG00000100376.7  16.12606 1.490974e-28 6.725352e-24
+3 22_45771974_G_A_b37 ENSG00000100376.7  16.12606 1.490974e-28 6.725352e-24
+4 22_45776213_G_A_b37 ENSG00000100376.7  16.12606 1.490974e-28 6.725352e-24
+5 22_45794212_G_A_b37 ENSG00000100376.7  16.12606 1.490974e-28 6.725352e-24
+6 22_45794283_T_C_b37 ENSG00000100376.7  16.12606 1.490974e-28 6.725352e-24
+      beta
+1 13.25193
+2 13.25193
+3 13.25193
+4 13.25193
+5 13.25193
+6 13.25193</code></pre>
+<pre class="r"><code>  head(me$trans$eqtls)</code></pre>
+<pre><code>                 snps               gene statistic       pvalue          FDR
+1 22_32672837_T_G_b37 ENSG00000183773.10 -7.833864 7.967835e-12 0.0001252302
+2 22_48718696_T_C_b37  ENSG00000211659.2  7.039648 3.388673e-10 0.0010651933
+3 22_48718828_A_G_b37  ENSG00000211659.2  7.039648 3.388673e-10 0.0010651933
+4 22_48718966_G_A_b37  ENSG00000211659.2  7.039648 3.388673e-10 0.0010651933
+5 22_48719380_G_A_b37  ENSG00000211659.2  7.039648 3.388673e-10 0.0010651933
+6 22_25298169_G_A_b37  ENSG00000202058.1  6.779977 1.130160e-09 0.0029604483
+        beta
+1  -1.172794
+2 363.130340
+3 363.130340
+4 363.130340
+5 363.130340
+6   5.466379</code></pre>
+<pre class="r"><code>  ## Make the histogram of local and distant p-values
+  plot(me)</code></pre>
+<p><img src="figure/e3-qtlmapping.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>  ## Make the qq-plot of local and distant p-values
+  plot(me_qq)  </code></pre>
+<p><img src="figure/e3-qtlmapping.Rmd/unnamed-chunk-11-2.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="multiple-testing-correction" class="section level2">
+<h2>Multiple testing correction</h2>
+<p><code>MatrixEQTL</code> does this for you automatically and returns
+the corrected p-value as a false discovery rate (FDR). Common thresholds
+on FDR are 5% or 10%. FastQTL uses a perumtation based strategy to get
+gene level p values and then FDR for gene p values.</p>
+</div>
+<div id="interpreting-eqtl-results" class="section level2">
+<h2>Interpreting eQTL results</h2>
+<p>Selects at most one associated SNP per gene. If there are many SNPs
+associated with a gene it is most likely that those SNPs are highly
+linked to each other (“in high LD”) and therefore they describe the same
+effect. There are still cases in which genes are regulated by different
+SNPs independently, this cannot be readily determined from the table
+produced by <code>MatrixEQTL</code>.</p>
+<ul>
+<li>print top eQTLs for genes. Let’s identify which SNPs are
+(significantly) associated with which genes at a maximum FDR of 5% from
+the cis-eQTL results. We’ll print a table in which only the lead SNP per
+gene is given. Also we’ll add the MAF for every SNP in the table.</li>
+</ul>
+<pre class="r"><code>library(dplyr)
+
+snp_values = read.table(SNP_file_name, row.names=1, header=TRUE)
+snp_values = data.frame(snps = rownames(snp_values), snp_values, stringsAsFactors = FALSE)
+
+top_eqtls = filter(me$cis$eqtls, FDR &lt;= 0.05) %&gt;% 
+  arrange(FDR) %&gt;% 
+  distinct(gene, .keep_all = TRUE)
+
+mafs = apply(as.matrix(snp_values[-1]),1,mean)/2
+mafs = pmin(mafs, 1 - mafs)
+mafs = data.frame(snps=names(mafs), maf = mafs)
+top_eqtls = left_join(top_eqtls, mafs, by=&quot;snps&quot;)
+head(top_eqtls)</code></pre>
+<pre><code>                 snps               gene statistic       pvalue          FDR
+1 22_45764874_T_C_b37  ENSG00000100376.7 16.126060 1.490974e-28 6.725352e-24
+2 22_41241945_C_T_b37  ENSG00000172404.4 14.772190 5.139381e-26 2.086404e-21
+3 22_39747780_G_A_b37 ENSG00000100321.10 11.531146 1.467769e-19 3.724132e-15
+4 22_24402321_G_A_b37  ENSG00000184674.7 11.378742 3.030010e-19 7.454999e-15
+5 22_26921725_A_G_b37  ENSG00000260065.1 10.655221 9.675930e-18 1.603298e-13
+6 22_45809624_C_A_b37  ENSG00000128408.7 -9.192007 1.144721e-14 1.290876e-10
+        beta       maf
+1 13.2519275 0.1631579
+2  0.1427365 0.4631579
+3  3.3888671 0.3421053
+4  6.2618570 0.4052632
+5  0.4066246 0.4578947
+6 -0.5574254 0.3947368</code></pre>
+</div>
+<div id="plot-eqtls" class="section level2">
+<h2>Plot eQTLs</h2>
+<pre class="r"><code># For this we also need df with expression data
+gene_values = read.table(expression_file_name, row.names=1, header=TRUE)
+gene_values = data.frame(gene = rownames(gene_values), gene_values, stringsAsFactors = FALSE)
+
+top_snp = top_eqtls$snps[2]
+top_gene = as.character(top_eqtls$gene[2])
+
+top_snp_data = filter(snp_values, snps == top_snp)
+top_gene_data = filter(gene_values, gene == top_gene)
+
+plot_data = t(bind_rows(top_snp_data[-1], top_gene_data[-1]))
+colnames(plot_data) = c(&quot;snp&quot;, &quot;gene_expr&quot;)
+plot_data = as.data.frame(plot_data)
+plot_data$snp = as.factor(plot_data$snp)
+head(plot_data)</code></pre>
+<pre><code>        snp gene_expr
+HG00171   2 0.2674373
+HG00173   1 0.2209592
+HG00174   1 0.2234611
+HG00176   2 0.4616005
+HG00177   2 0.3368802
+HG00178   1 0.2106011</code></pre>
+<pre class="r"><code>lm_top = lm(plot_data[,&quot;gene_expr&quot;] ~ as.numeric(plot_data[,&quot;snp&quot;]))
+summary(lm_top)</code></pre>
+<pre><code>
+Call:
+lm(formula = plot_data[, &quot;gene_expr&quot;] ~ as.numeric(plot_data[, 
+    &quot;snp&quot;]))
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.22057 -0.03636 -0.01455  0.03381  0.19657 
+
+Coefficients:
+                               Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)                    -0.03425    0.02099  -1.632    0.106    
+as.numeric(plot_data[, &quot;snp&quot;])  0.14166    0.01029  13.765   &lt;2e-16 ***
+---
+Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+
+Residual standard error: 0.06708 on 93 degrees of freedom
+Multiple R-squared:  0.6708,    Adjusted R-squared:  0.6672 
+F-statistic: 189.5 on 1 and 93 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>plot(plot_data, col=&quot;steelblue&quot;, 
+     main = paste0(top_gene, &quot; vs &quot;, top_snp))
+abline(lm_top, col=&quot;darkorange&quot;, lwd = 2, lty = 2)
+y_range = range(plot_data[,&quot;gene_expr&quot;])
+  text(x=2, y=y_range[1] + 0.5*diff(y_range), paste0(&quot;p=&quot;,
+  format(summary(lm_top)$coefficients[2,4],
+  scentific=TRUE, digits=2)), col = &quot;darkorange&quot;)</code></pre>
+<p><img src="figure/e3-qtlmapping.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="citation" class="section level1">
+<h1>Citation</h1>
+<p>Credits go to:</p>
+<ul>
+<li><p>PredictDB-Tutorial for data: <a
+href="https://github.com/hakyimlab/PredictDB-Tutorial/tree/master"
+class="uri">https://github.com/hakyimlab/PredictDB-Tutorial/tree/master</a></p></li>
+<li><p>For code: <a
+href="https://rstudio-pubs-static.s3.amazonaws.com/349118_7519a1b4bb614cf8bdf18e1698033c2a.html#linear_regression_of_genotype_on_phenotype"
+class="uri">https://rstudio-pubs-static.s3.amazonaws.com/349118_7519a1b4bb614cf8bdf18e1698033c2a.html#linear_regression_of_genotype_on_phenotype</a>.</p></li>
+</ul>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.1.0 (2021-05-18)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: CentOS Linux 7 (Core)
+
+Matrix products: default
+BLAS:   /software/R-4.1.0-no-openblas-el7-x86_64/lib64/R/lib/libRblas.so
+LAPACK: /software/R-4.1.0-no-openblas-el7-x86_64/lib64/R/lib/libRlapack.so
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8 LC_NUMERIC=C         LC_TIME=C           
+ [4] LC_COLLATE=C         LC_MONETARY=C        LC_MESSAGES=C       
+ [7] LC_PAPER=C           LC_NAME=C            LC_ADDRESS=C        
+[10] LC_TELEPHONE=C       LC_MEASUREMENT=C     LC_IDENTIFICATION=C 
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] dplyr_1.0.7    MatrixEQTL_2.3
+
+loaded via a namespace (and not attached):
+ [1] Rcpp_1.0.9       pillar_1.6.1     compiler_4.1.0   bslib_0.4.2     
+ [5] later_1.2.0      jquerylib_0.1.4  git2r_0.28.0     highr_0.9       
+ [9] workflowr_1.6.2  tools_4.1.0      digest_0.6.27    jsonlite_1.7.2  
+[13] evaluate_0.20    lifecycle_1.0.3  tibble_3.1.2     pkgconfig_2.0.3 
+[17] rlang_1.1.0      DBI_1.1.1        cli_3.6.1        rstudioapi_0.13 
+[21] yaml_2.2.1       xfun_0.38        fastmap_1.1.0    stringr_1.4.0   
+[25] knitr_1.42       generics_0.1.0   fs_1.6.1         vctrs_0.3.8     
+[29] sass_0.4.0       tidyselect_1.1.1 rprojroot_2.0.2  glue_1.4.2      
+[33] R6_2.5.0         fansi_0.5.0      rmarkdown_2.21   purrr_0.3.4     
+[37] magrittr_2.0.1   promises_1.2.0.1 ellipsis_0.3.2   htmltools_0.5.5 
+[41] assertthat_0.2.1 httpuv_1.6.1     utf8_1.2.1       stringi_1.6.2   
+[45] cachem_1.0.5     crayon_1.5.2    </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,134 @@
+---
+title: "Integrating eQTL and GWAS: TWAS and coloc"
+author: "Siming Zhao"
+date: "2/3/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Before the class
+
+Install R packages:
+
+```{r, eval=F}
+install.packages("remotes")
+remotes::install_github("MRCIEU/TwoSampleMR")
+```
+
+Note: you likely will need R >= 4.2 to install this package. If you don't have R version 4.2 or later, you can try with [POSIT](https://posit.cloud/).
+
+# Perform MR
+
+We will follow the [TwoSampleMR tutorial](https://mrcieu.github.io/TwoSampleMR/index.html) to perform a basic MR analysis. 
+
+In this example, we will perform MR of BMI against coronary heart disease. To do so we need to identify the SNPs that influence the BMI (get instruments), and then extract those SNPs from a GWAS on coronary heart disease (effects of instruments on outcome), then perform MR.
+
+```{r}
+library(TwoSampleMR)
+```
+
+## Get instruments for exposures
+
+First read in data for exposure: 
+
+```{r}
+bmi2_file <- system.file("extdata/bmi.csv", package = "TwoSampleMR")
+bmi_exp_dat <- read_exposure_data(
+    filename = bmi2_file,
+    sep = ",",
+    snp_col = "rsid",
+    beta_col = "effect",
+    se_col = "SE",
+    effect_allele_col = "a1",
+    other_allele_col = "a2",
+    eaf_col = "a1_freq",
+    pval_col = "p-value",
+    units_col = "Units",
+    gene_col = "Gene",
+    samplesize_col = "n"
+)
+#> No phenotype name specified, defaulting to 'exposure'.
+head(bmi_exp_dat)
+```
+
+To serve as valid instruments, they need to be independent. Thus we need to do clumping (those SNPs that have LD R-square above the specified threshold only the SNP with the lowest P-value will be retained). 
+
+```{r}
+bmi_exp_dat <- clump_data(bmi_exp_dat)
+```
+
+
+This package can also obtain data from thousands of existing GWAS directly. 
+A list of available GWAS
+
+```{r}
+ao <- available_outcomes()
+head(ao)
+```
+
+To extract instruments for a particular trait using a particular study, for example to obtain SNPs for body mass index using the Locke et al 2015 GIANT study, you specify the study ID as follows:
+
+This returns a set of LD clumped SNPs that are GWAS significant for BMI
+```{r}
+bmi2014_exp_dat <- extract_instruments(outcomes = 'ieu-a-2')
+```
+
+## Get effects of intruments on outcomes
+
+We now need to find a suitable GWAS for coronary heart disease. We can search the available studies:
+
+
+```{r}
+ao[grepl("heart disease", ao$trait), ]
+```
+The most recent CARDIOGRAM GWAS is ID number ieu-a-7. We can extract the BMI SNPs from this GWAS as follows:
+
+```{r}
+chd_out_dat <- extract_outcome_data(
+    snps = bmi_exp_dat$SNP,
+    outcomes = 'ieu-a-7'
+)
+```
+
+## Harmonise the exposure and outcome data
+
+```{r}
+dat <- harmonise_data(
+    exposure_dat = bmi_exp_dat, 
+    outcome_dat = chd_out_dat
+)
+#> Harmonising Body mass index || id:ieu-a-2 (ieu-a-2) and Coronary heart disease || id:ieu-a-7 (ieu-a-7)
+```
+
+## Perform MR
+
+We use two methods, MR-Egger and inverse variance weighting.
+```{r}
+res <- mr(dat, method_list = c("mr_egger_regression", "mr_ivw"))
+res
+```
+
+# Analyze MR results
+
+* Test for heterogeneity: 
+
+```{r}
+mr_heterogeneity(dat)
+```
+
+* Horizontal pleiotropy
+
+```{r}
+mr_pleiotropy_test(dat)
+```
+
+* Scatter Plot
+
+```{r}
+p1 <- mr_scatter_plot(res, dat)
+p1
+```
+

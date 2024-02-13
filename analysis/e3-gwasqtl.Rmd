@@ -1,0 +1,115 @@
+---
+title: "Integrating eQTL and GWAS: TWAS"
+author: "Siming Zhao"
+date: "2/3/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Before the class
+
+
+Install R packages.
+
+# Read in genotype data
+
+We use the genotype data provided by the SuSiE package. In this demo we assume these SNPs are close to a gene, i.e. would be included in a cis-EQTL mapping analysis.
+
+```{r geno}
+library(susieR)
+data(N2finemapping)
+attach(N2finemapping)
+G <- scale(X)
+N <- nrow(G)
+M <- ncol(G)
+
+set.seed(123)
+```
+
+# Simulate phenotype and expression
+```{r simulation}
+library(MASS)
+library(glmnet)
+
+# Simulation function
+# G: genotype matrix. h2.eQTL: h2 of eQTL. n.eQTL: number of eQTL SNPs. gamma: effect size of gene. theta: effect size of SNP.
+simulate <- function(G, h2.eQTL, n.eQTL, gamma, theta) {
+  N <- dim(G)[1]
+  M <- dim(G)[2]
+  
+  idx.eQTL <- sample(1:M, n.eQTL)
+  alpha <- rep(sqrt(h2.eQTL/n.eQTL), n.eQTL)
+  
+  # simulate gene expression data
+  X <- G[, idx.eQTL] %*% alpha + rnorm(N, sd=1)
+  
+  # simulate phenotype data
+  idx.SNP <- idx.eQTL[1] # choose a SNP that is one eQTL
+  Y <- X * gamma + as.matrix(G[, idx.SNP]) %*% theta + rnorm(N)
+  
+  # return results
+  return (list(X=X, Y=Y, idx.eQTL=idx.eQTL, idx.SNP))
+}
+```
+
+# Run a gene-level association analysis
+
+* Simulate X and Y
+```{r}
+h2.eQTL <- 0.3
+n.eQTL <- 2
+gamma <- 0.18
+theta <- 0
+
+data1 <- simulate(G, h2.eQTL, n.eQTL, gamma, theta)
+```
+
+* Predict gene expression
+```{r} 
+cvfit <- cv.glmnet(G, data1$X)
+X.tilde <- predict(cvfit, G, s = "lambda.min")
+plot(data1$X, X.tilde )
+```
+
+* Run association analysis between predicted expression and phenotype
+```{r}
+fit <- lm(data1$Y ~ X.tilde)
+pvalue <- summary(fit)$coefficients["X.tilde",4]
+print(pvalue)
+```
+
+# TWAS is confounded by variant pleiotropic effect.
+
+* Simulate X and Y
+```{r}
+h2.eQTL <- 0.3
+n.eQTL <- 2
+gamma <- 0
+theta <- 0.18
+
+data2 <- simulate(G, h2.eQTL, n.eQTL, gamma, theta)
+```
+
+* Predict gene expression
+```{r} 
+cvfit <- cv.glmnet(G, data2$X)
+X.tilde <- predict(cvfit, G, s = "lambda.min")
+plot(data2$X, X.tilde) 
+```
+
+* Run association analysis between predicted expression and phenotype
+```{r}
+fit <- lm(data2$Y ~ X.tilde)
+pvalue <- summary(fit)$coefficients["X.tilde",4]
+print(pvalue)
+```
+
+
+
+
+
+
+

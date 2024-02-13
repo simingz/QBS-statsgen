@@ -1,0 +1,344 @@
+---
+title: "Exercise-3-eQTL calling"
+author: "Siming Zhao"
+date: '2024-2-1'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Before the class
+
+- Download data.
+
+Download from https://rcweb.dartmouth.edu/Szhao/QBS148-statsgen/e3/. It contains gene expression and genotype data from the GEUVADIS dataset. We only used 95 [FIN](https://www.internationalgenome.org/data-portal/population/FIN) individuals. Only genotype of SNPs and expression for genes on chr22 are used in this demo.
+
+- Install R packages, `MatrixQTL`, `dplyr`.
+
+```{r, eval = F}
+install.packages("MatrixEQTL")
+install.packages("dplyr")
+```
+
+# Explore the data
+
+Load the data:
+```{r, message=FALSE, warning=FALSE}
+expr = read.table("data/e3/transformed_expression.fin.chr22.txt", row.names = 1)
+snps0 = read.table("data/e3/genotype.chr22.fin.txt", header = T)
+snps <- snps0[, -1]
+rownames(snps) <- snps0[, 1]
+snps <- t(snps)
+```
+
+Load gene and snp information.
+```{r}
+gene <- read.table("data/e3/gene.chr22.loc.txt", header = T)
+genotype <- read.table("data/e3/snp.chr22.loc.txt", header = T)
+
+head(gene)
+head(genotype)
+```
+
+To get a basic idea of the data
+```{r}
+head(expr)[,1:5]
+dim(expr)
+head(snps)[,1:5]
+dim(snps)
+
+boxplot(t(expr)[,1:5], ylim = c(-10,40), main = "distribution of expression for samples 1-5")
+```
+
+
+Minor allele frequency: the term MAF implies that the allele for which we return the measure has to be the minor (= less common) allele. This means that the MAF is smaller than 0.5 by definition.
+
+So let's now calculate the MAF for all SNPs among all individuals and correct the returned values so that the value is always given in respect to the minor allele. Then we'll plot a histogram of the MAFs of all SNPs
+
+```{r}
+maf = colMeans(snps[,-1])/2
+
+# To ensure we actually get the MAF this needs to be inverted.
+maf <- pmin(maf, 1-maf)
+names(maf) <- colnames(snps[,-1])
+
+hist(maf, main = "Distribution of MAF.", col = "steelblue")
+```
+
+
+# Data processing
+
+In practice, there will be extensive QCs for genotping and normalization etc for expression data. Genotype and expression data come in all sorts of flavours and preprocessing of this data needs to be done rather carefully. In this short introduction it is not possible to cover this topic in detail. Here, we are assuming the SNP genotype and expression data has passed QC and expression has been normalized. Some additional processing procedures for eQTL mapping: 
+
+## Filtering SNPs by MAF
+
+In an eQTL study often a minimum MAF is required. Since MAF essentially reflects how often an allele has been observed in a population, it also defines how often the gene expression levels have been observed for heterozygous and homozygous alleles.
+
+We will filter out SNPs with MAF < 0.05 from this cohort.
+
+
+## Covariates
+
+There are clinical covariates, such as age, sex. To correct for population structure, we should also include genotype PCs. This is similar to what we have introduced in [exercise 1: performing a GWAS](e1-gwas.html). 
+
+To correct for unmeasured confounders, we could perform PCA on gene expression and use PCs as covariates. 
+
+```{r}
+pca <- prcomp(expr, center=TRUE, scale = TRUE)
+plot(pca)
+```
+
+
+# A simple eQTL calling example
+
+Now we'll plot the expression levels of the first gene against the first SNP, 10th gene against the 10th SNP, 10th gene against the 10th SNP, as well as the 10th gene against the 15th SNP, depending on the genotypes of the samples by using simple dot plots. We'll add a bit of random noise (jitter) to the genotype data to make it all look more comprehensible.
+
+Match snps and gene expression
+```{r}
+snps <- snps[rownames(expr),]
+```
+
+Plot expression vs SNP genotype:
+```{r}
+par(mfrow=c(1,2))
+
+df <- cbind(snps[,10], expr[,10])
+colnames(df) <- c("geno", "expr")
+boxplot(expr ~ geno, data = df, col = "white")
+stripchart(expr ~ geno,
+           data = df,
+           method = "jitter",
+           pch = 19,
+           col = 2:4,
+           vertical = TRUE,
+           add = TRUE)
+
+df <- cbind(snps[,15], expr[,10])
+colnames(df) <- c("geno", "expr")
+boxplot(expr ~ geno, data = df, col = "white")
+stripchart(expr ~ geno,
+           data = df,
+           method = "jitter",
+           pch = 19,
+           col = 2:4,
+           vertical = TRUE,
+           add = TRUE)
+```
+
+To obtain estimates of the genotypic contribution to gene expression we fit a simple linear regression model of the form $E_i = \beta_0 + \beta G_i + \alpha X_i+ \epsilon$, where $E_i$ is the vector of gene expression values for gene $i$ and $G_i$ is the genotype vector for the SNP $i$. $X_i$ is the covariates. For this demonstration, we will just use the first PC of expression as the only covariate. We are interested in the estimate for $\beta$ which indicates the change in gene expression for each copy of the second allele.
+
+The p-value indicates the significance of the genetic component in the model. Let’s try that for gene 10 with SNP 10 and SNP 15.
+
+```{r}
+lm_10_10 = lm(expr[, 10] ~ snps[, 10] + as.numeric(pca$x[,1]))
+summary(lm_10_10)
+
+lm_10_15 = lm(expr[, 10] ~ snps[, 15] + as.numeric(pca$x[,1]))
+summary(lm_10_15)
+```
+
+So these two models don't catch any significant effect of explored SNPs and gene expression levels. In fact it is very hard to catch such effects by "manually" exploring real-world genomic data, usually containing tens or hundreds of thousands SNPs and hundreds or thousands gene expressions for large number of samples. Many softwares have been developed to perform eQTL mapping efficiently for thousands of snp-gene pairs, such as MatrixEQTL, fastQTL, tensorQTL etc.
+
+# Fitting many eQTL models with MatrixEQTL
+
+We'll be using R's `MatrixEQTL` package which is designed for fast eQTL analysis on large genomic data sets. `MatrixEQTL` can test for association between genotype and gene expression using linear regression with either additive or ANOVA genotype effects. The models can include covariates to account for factors as population stratification, gender, and clinical variables.
+It also supports models with heteroscedastic and/or correlated errors, false discovery rate estimation and separate treatment of local (cis) and distant (trans) eQTLs. You can learn more about `MatrixEQTL` [here](http://www.bios.unc.edu/research/genomic_software/Matrix_eQTL/).
+
+To perform an eQTL analysis we don’t only need to know the genotype and gene expression values for every sample, but also the genomic positions of genes and SNPs. This is necessary to define which SNPs should be tested against which genes. For cis-eQTL analyses SNPs in proximity to the gene are chosen and for trans-eQTL analyses SNPs further away, or on different chromosomes, are taken into account. The window in cis-eQTL analysis is commonly chosen to be 500kb-1Mb measured from gene's TSS.
+
+## Prepare files
+
+```{r}
+  # covariates files
+  covar <- cbind( "PC1", t(pca$x[,1, drop = F]))
+  colnames(covar)[1] <- "id"
+  write.table(covar, file = "output/eqtl-covariates.txt", sep = "\t", row.names = F, col.names = T, quote = F)
+  
+# SNP files, filter out MAF <0.05 SNPs.
+  sid <- names(maf[maf > 0.05])
+  snpf <- read.table("data/e3/genotype.chr22.fin.txt", header = T)
+  snpf.filtered <- snpf[snpf$id %in% sid,]
+  snplocf <- read.table("data/e3/snp.chr22.loc.txt", header = T)
+  snplocf.filtered <- snplocf[snplocf$snp %in% sid, ]
+  write.table(snpf.filtered, file = "output/genotype.chr22.fin.maf0.05.txt", sep = "\t", row.names = F, col.names = T, quote = F)
+  write.table(snplocf.filtered, file = "output/snp.chr22.maf0.05.loc.txt", sep = "\t", row.names = F, col.names = T, quote = F)
+```
+
+## Run MatrixEQTL
+```{r, message=FALSE, warning=FALSE}
+
+  suppressMessages(library(MatrixEQTL))
+  
+  SNP_file_name <-  "output/genotype.chr22.fin.maf0.05.txt";
+  snps_location_file_name <- "output/snp.chr22.maf0.05.loc.txt";
+  expression_file_name <- "data/e3/gene_exp.fin.chr22.txt";
+  gene_location_file_name <- "data/e3/gene.chr22.loc.txt";
+  covariates_file_name <- "output/eqtl-covariates.txt";
+  
+  # Output file name
+  output_file_name_cis = "output/MatrixEQTL-cis.txt";
+  output_file_name_tra = "output/MatrixEQTL-trans.txt";
+   
+  ## Settings
+  # Linear model to use, modelANOVA, modelLINEAR, or modelLINEAR_CROSS
+  useModel = modelLINEAR; # modelANOVA, modelLINEAR, or modelLINEAR_CROSS
+  
+  # Error covariance matrix
+  # Set to numeric() for identity.
+  errorCovariance = numeric();
+  
+  # Distance for local gene-SNP pairs
+  cisDist = 1e6
+  
+  # Only associations significant at this level will be saved
+  pvOutputThreshold_cis = 1e-5;
+  pvOutputThreshold_tra = 1e-5;
+  
+  
+  ## Load genotype data
+  snps = SlicedData$new();
+  snps$fileDelimiter = "\t"; # the TAB character
+  snps$fileOmitCharacters = "NA"; # denote missing values;
+  snps$fileSkipRows = 1; # one row of column labels
+  snps$fileSkipColumns = 1; # one column of row labels
+  snps$fileSliceSize = 2000; # read file in slices of 2,000 rows
+  snps$LoadFile(SNP_file_name);
+  
+  ## Load gene expression data
+  gene = SlicedData$new();
+  gene$fileDelimiter = "\t"; # the TAB character
+  gene$fileOmitCharacters = "NA"; # denote missing values;
+  gene$fileSkipRows = 1; # one row of column labels
+  gene$fileSkipColumns = 1; # one column of row labels
+  gene$fileSliceSize = 2000; # read file in slices of 2,000 rows
+  gene$LoadFile(expression_file_name);
+  
+  ## Load covariates
+  cvrt = SlicedData$new();
+  cvrt$fileDelimiter = "\t"; # the TAB character
+  cvrt$fileOmitCharacters = "NA"; # denote missing values;
+  cvrt$fileSkipRows = 1; # one row of column labels
+  cvrt$fileSkipColumns = 1; # one column of row labels
+  if(length(covariates_file_name)>0) {
+    cvrt$LoadFile(covariates_file_name);
+  }
+  
+  ## Run the analysis
+  snpspos = read.table(snps_location_file_name, header = TRUE, stringsAsFactors = FALSE);
+  genepos = read.table(gene_location_file_name, header = TRUE, stringsAsFactors = FALSE);
+  
+me = Matrix_eQTL_main(
+  snps = snps,
+  gene = gene,
+  cvrt = cvrt,
+  output_file_name = output_file_name_tra,
+  pvOutputThreshold = pvOutputThreshold_tra,
+  useModel = useModel,
+  errorCovariance = errorCovariance,
+  verbose = FALSE,
+  output_file_name.cis = output_file_name_cis,
+  pvOutputThreshold.cis = pvOutputThreshold_cis,
+  snpspos = snpspos,
+  genepos = genepos,
+  cisDist = cisDist,
+  pvalue.hist = TRUE,
+  min.pv.by.genesnp = FALSE,
+  noFDRsaveMemory = FALSE);
+  
+  me_qq = Matrix_eQTL_main(
+    snps = snps,
+    gene = gene,
+    cvrt = cvrt,
+    output_file_name = output_file_name_tra,
+    pvOutputThreshold = pvOutputThreshold_tra,
+    useModel = useModel,
+    errorCovariance = errorCovariance,
+    verbose = FALSE,
+    output_file_name.cis = output_file_name_cis,
+    pvOutputThreshold.cis = pvOutputThreshold_cis,
+    snpspos = snpspos,
+    genepos = genepos,
+    cisDist = cisDist,
+    pvalue.hist = "qqplot",
+    min.pv.by.genesnp = FALSE,
+    noFDRsaveMemory = FALSE)
+  
+  cat('Analysis done in: ', me$time.in.sec, ' seconds', '\n');
+  head(me$cis$eqtls)
+  head(me$trans$eqtls)
+  
+  ## Make the histogram of local and distant p-values
+  plot(me)
+  
+  ## Make the qq-plot of local and distant p-values
+  plot(me_qq)  
+```
+
+## Multiple testing correction
+`MatrixEQTL` does this for you automatically and returns the corrected p-value as a false discovery rate (FDR). Common thresholds on FDR are 5% or 10%. FastQTL uses a perumtation based strategy to get gene level p values and then FDR for gene p values.
+
+## Interpreting eQTL results
+
+Selects at most one associated SNP per gene. If there are many SNPs associated with a gene it is most likely that those SNPs are highly linked to each other (“in high LD”) and therefore they describe the same effect. There are still cases in which genes are regulated by different SNPs independently, this cannot be readily determined from the table produced by `MatrixEQTL`. 
+
+* print top eQTLs for genes.
+Let's identify which SNPs are (significantly) associated with which genes at a
+maximum FDR of 5% from the cis-eQTL results. We'll print a table in which only the lead SNP per gene is given. Also we'll add the MAF for every SNP in the table.
+
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+
+snp_values = read.table(SNP_file_name, row.names=1, header=TRUE)
+snp_values = data.frame(snps = rownames(snp_values), snp_values, stringsAsFactors = FALSE)
+
+top_eqtls = filter(me$cis$eqtls, FDR <= 0.05) %>% 
+  arrange(FDR) %>% 
+  distinct(gene, .keep_all = TRUE)
+
+mafs = apply(as.matrix(snp_values[-1]),1,mean)/2
+mafs = pmin(mafs, 1 - mafs)
+mafs = data.frame(snps=names(mafs), maf = mafs)
+top_eqtls = left_join(top_eqtls, mafs, by="snps")
+head(top_eqtls)
+```
+
+## Plot eQTLs
+
+```{r, message=FALSE, warning=FALSE}
+# For this we also need df with expression data
+gene_values = read.table(expression_file_name, row.names=1, header=TRUE)
+gene_values = data.frame(gene = rownames(gene_values), gene_values, stringsAsFactors = FALSE)
+
+top_snp = top_eqtls$snps[2]
+top_gene = as.character(top_eqtls$gene[2])
+
+top_snp_data = filter(snp_values, snps == top_snp)
+top_gene_data = filter(gene_values, gene == top_gene)
+
+plot_data = t(bind_rows(top_snp_data[-1], top_gene_data[-1]))
+colnames(plot_data) = c("snp", "gene_expr")
+plot_data = as.data.frame(plot_data)
+plot_data$snp = as.factor(plot_data$snp)
+head(plot_data)
+
+lm_top = lm(plot_data[,"gene_expr"] ~ as.numeric(plot_data[,"snp"]))
+summary(lm_top)
+
+plot(plot_data, col="steelblue", 
+     main = paste0(top_gene, " vs ", top_snp))
+abline(lm_top, col="darkorange", lwd = 2, lty = 2)
+y_range = range(plot_data[,"gene_expr"])
+  text(x=2, y=y_range[1] + 0.5*diff(y_range), paste0("p=",
+  format(summary(lm_top)$coefficients[2,4],
+  scentific=TRUE, digits=2)), col = "darkorange")
+```
+
+
+# Citation
+
+Credits go to: 
+
+* PredictDB-Tutorial for data: https://github.com/hakyimlab/PredictDB-Tutorial/tree/master
+
+* For code: https://rstudio-pubs-static.s3.amazonaws.com/349118_7519a1b4bb614cf8bdf18e1698033c2a.html#linear_regression_of_genotype_on_phenotype.

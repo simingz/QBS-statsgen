@@ -20,4 +20,10 @@ QBS 148 Introduction to statistical genetics
 
 [Exercise 2-c: fine mapping](e2-finemapping.html)
 
+[Exercise 3-a: molecular QTL mapping](e3-qtlmapping.html)
+
+[Exercise 3-b: GWAS + eQTL](e3-gwasqtl.html)
+
+[Exercise 3-c: Mendelian randomization](e3-mr.html)
+
 

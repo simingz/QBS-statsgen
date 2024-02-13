@@ -9,9 +9,10 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
+<meta name="author" content="Siming Zhao" />
 
 
-<title>QBS 148 Introduction to statistical genetics</title>
+<title>Integrating eQTL and GWAS: TWAS</title>
 
 <script src="site_libs/header-attrs-2.21/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -29,6 +30,9 @@
        h6 {font-size: 12px;}
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
@@ -229,6 +233,69 @@ $(document).ready(function () {
 
 
 
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
 
 </head>
 
@@ -236,6 +303,16 @@ $(document).ready(function () {
 
 
 <div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
 
 
 
@@ -269,8 +346,9 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">QBS 148 Introduction to statistical
-genetics</h1>
+<h1 class="title toc-ignore">Integrating eQTL and GWAS: TWAS</h1>
+<h4 class="author">Siming Zhao</h4>
+<h4 class="date">2/3/2024</h4>
 
 </div>
 
@@ -303,7 +381,7 @@ aria-hidden="true"></span> </a>
 </p>
 <p>
 <strong>Checks:</strong> <span
-class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 1
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6
 <span class="glyphicon glyphicon-exclamation-sign text-danger"
 aria-hidden="true"></span> 1
 </p>
@@ -337,12 +415,96 @@ changes </a>
 <div id="strongRMarkdownfilestronguncommittedchanges"
 class="panel-collapse collapse">
 <div class="panel-body">
-<p>The R Markdown file has unstaged changes. To know which version of
-the R Markdown file created these results, you’ll want to first commit
-it to the Git repo. If you’re still working on the analysis, you can
-ignore this warning. When you’re finished, you can run
+<p>The R Markdown is untracked by Git. To know which version of the R
+Markdown file created these results, you’ll want to first commit it to
+the Git repo. If you’re still working on the analysis, you can ignore
+this warning. When you’re finished, you can run
 <code>wflow_publish</code> to commit the R Markdown file and build the
 HTML.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20231230code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20231230)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20231230code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20231230)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
 </div>
 </div>
 </div>
@@ -388,7 +550,7 @@ Ignored files:
     Ignored:    .Rproj.user/B81CBE6F/presentation/
     Ignored:    .Rproj.user/B81CBE6F/profiles-cache/
     Ignored:    .Rproj.user/B81CBE6F/sources/per/
-    Ignored:    .Rproj.user/B81CBE6F/sources/s-c2354472/
+    Ignored:    .Rproj.user/B81CBE6F/sources/s-4dd76fec/
     Ignored:    .Rproj.user/B81CBE6F/tutorial/
     Ignored:    .Rproj.user/shared/notebooks/1C2AC29C-e1-gwas-power/
     Ignored:    .Rproj.user/shared/notebooks/1EB0B2DC-e1-gwas/1/s/ce0r78nx8keuu/
@@ -437,258 +599,161 @@ have uncommitted changes.
 <hr>
 </div>
 <div id="versions" class="tab-pane fade">
-
 <p>
-These are the previous versions of the repository in which changes were
-made to the R Markdown (<code>analysis/index.Rmd</code>) and HTML
-(<code>docs/index.html</code>) files. If you’ve configured a remote Git
-repository (see <code>?wflow_git_remote</code>), click on the hyperlinks
-in the table below to view the files as they were in that past version.
+There are no past versions. Publish this analysis with
+<code>wflow_publish()</code> to start tracking its development.
 </p>
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-File
-</th>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-<th>
-Message
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/simingz/QBS-statsgen/blob/16c8bc10b35de9196f94178671c98e33eaedd634/analysis/index.Rmd" target="_blank">16c8bc1</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2024-01-29
-</td>
-<td>
-index page
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/simingz/QBS-statsgen/16c8bc10b35de9196f94178671c98e33eaedd634/docs/index.html" target="_blank">16c8bc1</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2024-01-29
-</td>
-<td>
-index page
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/simingz/QBS-statsgen/blob/a29f425d8ec10ab34c279d32384edae3dd4eb6e6/analysis/index.Rmd" target="_blank">a29f425</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2024-01-23
-</td>
-<td>
-e2
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/simingz/QBS-statsgen/a29f425d8ec10ab34c279d32384edae3dd4eb6e6/docs/index.html" target="_blank">a29f425</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2024-01-23
-</td>
-<td>
-e2
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/simingz/QBS-statsgen/blob/1cb2d1e3eb5f479b56948ebb5819a88d9c94b122/analysis/index.Rmd" target="_blank">1cb2d1e</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2024-01-07
-</td>
-<td>
-gwas power
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/simingz/QBS-statsgen/1cb2d1e3eb5f479b56948ebb5819a88d9c94b122/docs/index.html" target="_blank">1cb2d1e</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2024-01-07
-</td>
-<td>
-gwas power
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/simingz/QBS-statsgen/3b4b60dd8ab1c2085c0aa825e4645f04833c1d9c/docs/index.html" target="_blank">3b4b60d</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2024-01-02
-</td>
-<td>
-e1
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/simingz/QBS-statsgen/4e4427b0f7e8acf529c5786788a137009a730cab/docs/index.html" target="_blank">4e4427b</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2024-01-02
-</td>
-<td>
-exercise 1
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/simingz/QBS-statsgen/blob/e4808cde19af6af5cea539b5d0bf5c358d626cb2/analysis/index.Rmd" target="_blank">e4808cd</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2023-12-31
-</td>
-<td>
-build website
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/simingz/QBS-statsgen/e4808cde19af6af5cea539b5d0bf5c358d626cb2/docs/index.html" target="_blank">e4808cd</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2023-12-31
-</td>
-<td>
-build website
-</td>
-</tr>
-<tr>
-<td>
-Rmd
-</td>
-<td>
-<a href="https://github.com/simingz/QBS-statsgen/blob/e56d90f253108984ddb591f33678a59b003d1184/analysis/index.Rmd" target="_blank">e56d90f</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2023-12-30
-</td>
-<td>
-build website
-</td>
-</tr>
-<tr>
-<td>
-html
-</td>
-<td>
-<a href="https://rawcdn.githack.com/simingz/QBS-statsgen/e56d90f253108984ddb591f33678a59b003d1184/docs/index.html" target="_blank">e56d90f</a>
-</td>
-<td>
-simingz
-</td>
-<td>
-2023-12-30
-</td>
-<td>
-build website
-</td>
-</tr>
-</tbody>
-</table>
-</div>
 <hr>
 </div>
 </div>
 </div>
-<p>QBS 148 Introduction to statistical genetics</p>
-<p><a href="e1-gwas.html">Exercise 1-a: run a GWAS</a></p>
-<p><a href="e1-gwas-power.html">Exercise 1-b: GWAS power</a></p>
-<p><a href="e2-lmm.html">Exercise 2-a: Genetic relationship
-matrix</a></p>
-<p><a href="e2-prs.html">Exercise 2-b: polygenic risk score</a></p>
-<p><a href="e2-finemapping.html">Exercise 2-c: fine mapping</a></p>
-<p><a href="e3-qtlmapping.html">Exercise 3-a: molecular QTL
-mapping</a></p>
-<p><a href="e3-gwasqtl.html">Exercise 3-b: GWAS + eQTL</a></p>
-<p><a href="e3-mr.html">Exercise 3-c: Mendelian randomization</a></p>
+<div id="before-the-class" class="section level1">
+<h1>Before the class</h1>
+<p>Install R packages.</p>
+</div>
+<div id="read-in-genotype-data" class="section level1">
+<h1>Read in genotype data</h1>
+<p>We use the genotype data provided by the SuSiE package. In this demo
+we assume these SNPs are close to a gene, i.e. would be included in a
+cis-EQTL mapping analysis.</p>
+<pre class="r"><code>library(susieR)
+data(N2finemapping)
+attach(N2finemapping)
+G &lt;- scale(X)
+N &lt;- nrow(G)
+M &lt;- ncol(G)
+
+set.seed(123)</code></pre>
+</div>
+<div id="simulate-phenotype-and-expression" class="section level1">
+<h1>Simulate phenotype and expression</h1>
+<pre class="r"><code>library(MASS)
+library(glmnet)</code></pre>
+<pre><code>Loading required package: Matrix</code></pre>
+<pre><code>Loaded glmnet 4.1-2</code></pre>
+<pre class="r"><code># Simulation function
+# G: genotype matrix. h2.eQTL: h2 of eQTL. n.eQTL: number of eQTL SNPs. gamma: effect size of gene. theta: effect size of SNP.
+simulate &lt;- function(G, h2.eQTL, n.eQTL, gamma, theta) {
+  N &lt;- dim(G)[1]
+  M &lt;- dim(G)[2]
+  
+  idx.eQTL &lt;- sample(1:M, n.eQTL)
+  alpha &lt;- rep(sqrt(h2.eQTL/n.eQTL), n.eQTL)
+  
+  # simulate gene expression data
+  X &lt;- G[, idx.eQTL] %*% alpha + rnorm(N, sd=1)
+  
+  # simulate phenotype data
+  idx.SNP &lt;- idx.eQTL[1] # choose a SNP that is one eQTL
+  Y &lt;- X * gamma + as.matrix(G[, idx.SNP]) %*% theta + rnorm(N)
+  
+  # return results
+  return (list(X=X, Y=Y, idx.eQTL=idx.eQTL, idx.SNP))
+}</code></pre>
+</div>
+<div id="run-a-gene-level-association-analysis" class="section level1">
+<h1>Run a gene-level association analysis</h1>
+<ul>
+<li>Simulate X and Y</li>
+</ul>
+<pre class="r"><code>h2.eQTL &lt;- 0.3
+n.eQTL &lt;- 2
+gamma &lt;- 0.18
+theta &lt;- 0
+
+data1 &lt;- simulate(G, h2.eQTL, n.eQTL, gamma, theta)</code></pre>
+<ul>
+<li>Predict gene expression</li>
+</ul>
+<pre class="r"><code>cvfit &lt;- cv.glmnet(G, data1$X)
+X.tilde &lt;- predict(cvfit, G, s = &quot;lambda.min&quot;)
+plot(data1$X, X.tilde )</code></pre>
+<p><img src="figure/e3-gwasqtl.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<ul>
+<li>Run association analysis between predicted expression and
+phenotype</li>
+</ul>
+<pre class="r"><code>fit &lt;- lm(data1$Y ~ X.tilde)
+pvalue &lt;- summary(fit)$coefficients[&quot;X.tilde&quot;,4]
+print(pvalue)</code></pre>
+<pre><code>[1] 0.001428478</code></pre>
+</div>
+<div id="twas-is-confounded-by-variant-pleiotropic-effect."
+class="section level1">
+<h1>TWAS is confounded by variant pleiotropic effect.</h1>
+<ul>
+<li>Simulate X and Y</li>
+</ul>
+<pre class="r"><code>h2.eQTL &lt;- 0.3
+n.eQTL &lt;- 2
+gamma &lt;- 0
+theta &lt;- 0.18
+
+data2 &lt;- simulate(G, h2.eQTL, n.eQTL, gamma, theta)</code></pre>
+<ul>
+<li>Predict gene expression</li>
+</ul>
+<pre class="r"><code>cvfit &lt;- cv.glmnet(G, data2$X)
+X.tilde &lt;- predict(cvfit, G, s = &quot;lambda.min&quot;)
+plot(data2$X, X.tilde) </code></pre>
+<p><img src="figure/e3-gwasqtl.Rmd/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+<ul>
+<li>Run association analysis between predicted expression and
+phenotype</li>
+</ul>
+<pre class="r"><code>fit &lt;- lm(data2$Y ~ X.tilde)
+pvalue &lt;- summary(fit)$coefficients[&quot;X.tilde&quot;,4]
+print(pvalue)</code></pre>
+<pre><code>[1] 0.000167917</code></pre>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.1.0 (2021-05-18)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: CentOS Linux 7 (Core)
+
+Matrix products: default
+BLAS:   /software/R-4.1.0-no-openblas-el7-x86_64/lib64/R/lib/libRblas.so
+LAPACK: /software/R-4.1.0-no-openblas-el7-x86_64/lib64/R/lib/libRlapack.so
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8 LC_NUMERIC=C         LC_TIME=C           
+ [4] LC_COLLATE=C         LC_MONETARY=C        LC_MESSAGES=C       
+ [7] LC_PAPER=C           LC_NAME=C            LC_ADDRESS=C        
+[10] LC_TELEPHONE=C       LC_MEASUREMENT=C     LC_IDENTIFICATION=C 
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] glmnet_4.1-2   Matrix_1.3-3   MASS_7.3-54    susieR_0.12.35
+
+loaded via a namespace (and not attached):
+ [1] shape_1.4.6        tidyselect_1.1.1   xfun_0.38          bslib_0.4.2       
+ [5] purrr_0.3.4        splines_4.1.0      lattice_0.20-44    colorspace_2.0-2  
+ [9] vctrs_0.3.8        generics_0.1.0     htmltools_0.5.5    yaml_2.2.1        
+[13] survival_3.2-11    utf8_1.2.1         rlang_1.1.0        mixsqp_0.3-48     
+[17] jquerylib_0.1.4    later_1.2.0        pillar_1.6.1       glue_1.4.2        
+[21] DBI_1.1.1          foreach_1.5.1      plyr_1.8.6         matrixStats_0.59.0
+[25] lifecycle_1.0.3    stringr_1.4.0      munsell_0.5.0      gtable_0.3.0      
+[29] workflowr_1.6.2    codetools_0.2-18   evaluate_0.20      knitr_1.42        
+[33] fastmap_1.1.0      httpuv_1.6.1       irlba_2.3.3        fansi_0.5.0       
+[37] highr_0.9          Rcpp_1.0.9         promises_1.2.0.1   scales_1.1.1      
+[41] cachem_1.0.5       jsonlite_1.7.2     fs_1.6.1           ggplot2_3.3.5     
+[45] digest_0.6.27      stringi_1.6.2      dplyr_1.0.7        rprojroot_2.0.2   
+[49] grid_4.1.0         cli_3.6.1          tools_4.1.0        magrittr_2.0.1    
+[53] sass_0.4.0         tibble_3.1.2       crayon_1.5.2       pkgconfig_2.0.3   
+[57] ellipsis_0.3.2     iterators_1.0.13   reshape_0.8.8      assertthat_0.2.1  
+[61] rmarkdown_2.21     rstudioapi_0.13    R6_2.5.0           git2r_0.28.0      
+[65] compiler_4.1.0    </code></pre>
+</div>
+</div>
 
 
 <!-- Adjust MathJax settings so that all math formulae are shown using
@@ -706,6 +771,8 @@ footer is added to webpages before the MathJax javascript. -->
 
 
 
+</div>
+</div>
 
 </div>
 
@@ -738,6 +805,35 @@ $(document).ready(function () {
 
 <!-- code folding -->
 
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>
