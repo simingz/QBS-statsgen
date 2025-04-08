@@ -14,11 +14,11 @@ QBS 148 Introduction to statistical genetics
 
 [Exercise 1-b: GWAS power](e1-gwas-power.html)
 
-[Exercise 2-a: Genetic relationship matrix](e2-lmm.html)
+[Exercise 1-c: Genetic relationship matrix](e2-lmm.html)
 
-[Exercise 2-b: polygenic risk score](e2-prs.html)
+[Exercise 2-a: polygenic risk score](e2-prs.html)
 
-[Exercise 2-c: fine mapping](e2-finemapping.html)
+[Exercise 2-b: fine mapping](e2-finemapping.html)
 
 [Exercise 3-a: molecular QTL mapping](e3-qtlmapping.html)
 
