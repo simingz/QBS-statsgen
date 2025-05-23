@@ -28,4 +28,10 @@ QBS 148 Introduction to statistical genetics
 
 [Exercise 3-c: Mendelian randomization](e3-mr.html)
 
+[Exercise 4-a: CNN model for DNA sequence](e4-1_DNA_sequence_prediction_CNN.html)
+
+[Exercise 4-b: Borzoi inference](e4-2 e4-2 Borzoi inference_exercise.html)
+
+[Exercise 4-c: autoencoder for single cell data](e4-3_scRNA_autoencoder.html)
+
 
