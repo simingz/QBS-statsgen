@@ -348,7 +348,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Exercise-3-eQTL calling</h1>
 <h4 class="author">Siming Zhao</h4>
-<h4 class="date">2024-2-1</h4>
+<h4 class="date">2026-04-13</h4>
 
 </div>
 
@@ -610,7 +610,7 @@ href="https://www.internationalgenome.org/data-portal/population/FIN">FIN</a>
 individuals. Only genotype of SNPs and expression for genes on chr22 are
 used in this demo.</p>
 <ul>
-<li>Install R packages, <code>MatrixQTL</code>, <code>dplyr</code>.</li>
+<li>Install R packages, <code>MatrixEQTL</code>, <code>dplyr</code>.</li>
 </ul>
 <pre class="r"><code>install.packages(&quot;MatrixEQTL&quot;)
 install.packages(&quot;dplyr&quot;)</code></pre>
@@ -824,7 +824,7 @@ effects by “manually” exploring real-world genomic data, usually
 containing tens or hundreds of thousands SNPs and hundreds or thousands
 gene expressions for large number of samples. Many softwares have been
 developed to perform eQTL mapping efficiently for thousands of snp-gene
-pairs, such as MatrixEQTL, fastQTL, tensorQTL etc.</p>
+pairs, such as <a href="http://www.bios.unc.edu/research/genomic_software/Matrix_eQTL/">MatrixEQTL</a>, <a href="https://github.com/broadinstitute/tensorqtl">tensorQTL</a> (GPU-accelerated, ~200x faster than CPU-based tools), and <a href="https://qtltools.github.io/qtltools/">QTLtools</a>. Note: fastQTL is no longer actively maintained and has been largely superseded by tensorQTL and QTLtools.</p>
 </div>
 <div id="fitting-many-eqtl-models-with-matrixeqtl"
 class="section level1">
@@ -1005,8 +1005,7 @@ me = Matrix_eQTL_main(
 <h2>Multiple testing correction</h2>
 <p><code>MatrixEQTL</code> does this for you automatically and returns
 the corrected p-value as a false discovery rate (FDR). Common thresholds
-on FDR are 5% or 10%. FastQTL uses a perumtation based strategy to get
-gene level p values and then FDR for gene p values.</p>
+on FDR are 5% or 10%. Tools like tensorQTL and QTLtools use a permutation-based strategy to obtain gene-level p-values, followed by FDR correction across genes.</p>
 </div>
 <div id="interpreting-eqtl-results" class="section level2">
 <h2>Interpreting eQTL results</h2>

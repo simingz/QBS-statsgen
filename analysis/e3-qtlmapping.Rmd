@@ -1,7 +1,7 @@
 ---
 title: "Exercise-3-eQTL calling"
 author: "Siming Zhao"
-date: '2024-2-1'
+date: '2026-04-13'
 output: html_document
 ---
 
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Download from https://rcweb.dartmouth.edu/Szhao/QBS148-statsgen/e3/. It contains gene expression and genotype data from the GEUVADIS dataset. We only used 95 [FIN](https://www.internationalgenome.org/data-portal/population/FIN) individuals. Only genotype of SNPs and expression for genes on chr22 are used in this demo.
 
-- Install R packages, `MatrixQTL`, `dplyr`.
+- Install R packages, `MatrixEQTL`, `dplyr`.
 
 ```{r, eval = F}
 install.packages("MatrixEQTL")
@@ -138,7 +138,7 @@ lm_10_15 = lm(expr[, 10] ~ snps[, 15] + as.numeric(pca$x[,1]))
 summary(lm_10_15)
 ```
 
-So these two models don't catch any significant effect of explored SNPs and gene expression levels. In fact it is very hard to catch such effects by "manually" exploring real-world genomic data, usually containing tens or hundreds of thousands SNPs and hundreds or thousands gene expressions for large number of samples. Many softwares have been developed to perform eQTL mapping efficiently for thousands of snp-gene pairs, such as MatrixEQTL, fastQTL, tensorQTL etc.
+So these two models don't catch any significant effect of explored SNPs and gene expression levels. In fact it is very hard to catch such effects by "manually" exploring real-world genomic data, usually containing tens or hundreds of thousands SNPs and hundreds or thousands gene expressions for large number of samples. Many softwares have been developed to perform eQTL mapping efficiently for thousands of snp-gene pairs, such as [MatrixEQTL](http://www.bios.unc.edu/research/genomic_software/Matrix_eQTL/), [tensorQTL](https://github.com/broadinstitute/tensorqtl) (GPU-accelerated, ~200x faster than CPU-based tools), and [QTLtools](https://qtltools.github.io/qtltools/). Note: fastQTL is no longer actively maintained and has been largely superseded by tensorQTL and QTLtools.
 
 # Fitting many eQTL models with MatrixEQTL
 
@@ -276,7 +276,7 @@ me = Matrix_eQTL_main(
 ```
 
 ## Multiple testing correction
-`MatrixEQTL` does this for you automatically and returns the corrected p-value as a false discovery rate (FDR). Common thresholds on FDR are 5% or 10%. FastQTL uses a perumtation based strategy to get gene level p values and then FDR for gene p values.
+`MatrixEQTL` does this for you automatically and returns the corrected p-value as a false discovery rate (FDR). Common thresholds on FDR are 5% or 10%. Tools like tensorQTL and QTLtools use a permutation-based strategy to obtain gene-level p-values, followed by FDR correction across genes.
 
 ## Interpreting eQTL results
 

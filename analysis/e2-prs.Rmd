@@ -1,7 +1,7 @@
 ---
 title: "Polygenic risk score"
 author: "Siming Zhao"
-date: '2024-01-21'
+date: '2026-04-13'
 output: html_document
 ---
 
@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 * Install GCTA
 
-The GCTA software can be downloaded from https://yanglab.westlake.edu.cn/software/gcta/#Download
+The GCTA software (current version: 1.95.1, released February 2026) can be downloaded from https://yanglab.westlake.edu.cn/software/gcta/#Download
 
 This is the original paper for GCTA: Yang et al. (2011) GCTA: a tool for Genome-wide Complex Trait Analysis. Am J Hum Genet. 88(1): 76-82. [PubMed ID: 21167468]. This is a tool widely used to estimate and partition complex trait variation with large GWAS data sets.
 

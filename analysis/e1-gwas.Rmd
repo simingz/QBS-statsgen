@@ -1,7 +1,7 @@
 ---
 title: "Exercise-1-GWAS"
 author: "Siming Zhao"
-date: '2023-12-31'
+date: '2026-04-13'
 output: html_document
 ---
 
@@ -14,22 +14,20 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Two versions
 
-* [PLINK Homepage (1.9)](https://www.cog-genomics.org/plink2)
+* [PLINK Homepage (1.9)](https://www.cog-genomics.org/plink/1.9/) — current stable: beta 7.11 (August 2025)
 
-* [PLINK Homepage (2.0)](https://www.cog-genomics.org/plink2.0)
+* [PLINK Homepage (2.0)](https://www.cog-genomics.org/plink/2.0/) — current: alpha 6.33 (February 2026)
 
-For this exercise, please install plink 1.9. On discovery, plink is already installed. you can do `module load plink` to load plink.
+For this exercise, please install plink 1.9. On discovery, plink is already installed. You can do `module load plink` to load plink.
 
-- Install R >= 4.1, Rstudio. You can do this on your local computer, the discovery cluster, or use https://posit.cloud/. The free plan offers 25 hours/month.
+- Install R >= 4.4, RStudio. You can do this on your local computer, the discovery cluster, or use https://posit.cloud/. The free plan offers 25 compute hours/month.
 
-- Install R packages, `snpStats`, `data.table`, `glue`, `dplyr`, `qqman`
+- Install R packages: `snpStats`, `data.table`, `glue`, `dplyr`, `qqman`
 
 ```{r, eval = F}
 install.packages('BiocManager')
 BiocManager::install('snpStats')
-install.packages("data.table") 
-install.packages("dplyr")
-install.packages("qqman")
+install.packages(c("data.table", "glue", "dplyr", "qqman"))
 ```
 
 - Getting the data
