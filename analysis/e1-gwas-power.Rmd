@@ -1,7 +1,7 @@
 ---
 title: "e1-GWAS-power"
 author: "Siming Zhao"
-date: '2024-01-07'
+date: '2026-04-13'
 output: html_document
 ---
 
@@ -26,7 +26,7 @@ In this vignette, we'd like to:
 
 Consider a single locus, its genotype is $X$. We pre-specify the model for continuous trait $Y$ and genotype $X$ as
 
-$$Y = \beta X + \epsilon, \epsilon ~ N(0, \sigma_\epsilon^2)$$
+$$Y = \beta X + \epsilon, \epsilon \sim N(0, \sigma_\epsilon^2)$$
 where we assume 
 
 * genotype of this locus follows Hardy-Weinberg equilibrium with a pre-specified minor allele frequency. 

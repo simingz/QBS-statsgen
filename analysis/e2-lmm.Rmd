@@ -1,7 +1,7 @@
 ---
 title: "Genetic relationship matrix"
 author: "Siming Zhao"
-date: '2024-01-21'
+date: '2026-04-13'
 output: html_document
 ---
 
@@ -44,7 +44,7 @@ Use plink to get GRM
 ```{bash, eval=F}
 plink --bfile data/e2/oz --make-grm-gz --out output/oz
 ```
-This will generate  `ozbim.grm.gz` and  `ozbim.grm.id` files in the `output` folder. Note: you will need to create the `output` folder first if you don't have one.
+This will generate `oz.grm.gz` and `oz.grm.id` files in the `output` folder. Note: you will need to create the `output` folder first if you don't have one.
 
 To visualize this:
 ```{r}
@@ -54,7 +54,7 @@ tileplot <- function(mat)
 {
   mat = data.frame(mat)
   mat$Var1 = factor(rownames(mat), levels=rownames(mat)) ## preserve rowname order
-  melted_mat <- gather(mat,key=Var2,value=value,-Var1)
+  melted_mat <- pivot_longer(mat, cols=-Var1, names_to="Var2", values_to="value")
   melted_mat$Var2 = factor(melted_mat$Var2, levels=colnames(mat)) ## preserve colname order
   rango = range(melted_mat$value)
   pp <- ggplot(melted_mat,aes(x=Var1,y=Var2,fill=value)) + geom_tile() ##+scale_fill_gradientn(colours = c("#C00000", "#FF0000", "#FF8080", "#FFC0C0", "#FFFFFF", "#C0C0FF", "#8080FF", "#0000FF", "#0000C0"), limit = c(-1,1))

@@ -11,7 +11,7 @@
 
 <meta name="author" content="Siming Zhao" />
 
-<meta name="date" content="2024-01-21" />
+<meta name="date" content="2026-04-13" />
 
 <title>Genetic relationship matrix</title>
 
@@ -349,7 +349,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Genetic relationship matrix</h1>
 <h4 class="author">Siming Zhao</h4>
-<h4 class="date">2024-01-21</h4>
+<h4 class="date">2026-04-13</h4>
 
 </div>
 
@@ -648,8 +648,8 @@ class="uri">https://rcweb.dartmouth.edu/Szhao/QBS148-statsgen/e2/</a>.</p>
 <h1>Get and plot GRM</h1>
 <p>Use plink to get GRM</p>
 <pre class="bash"><code>plink --bfile data/e2/oz --make-grm-gz --out output/oz</code></pre>
-<p>This will generate <code>ozbim.grm.gz</code> and
-<code>ozbim.grm.id</code> files in the <code>output</code> folder. Note:
+<p>This will generate <code>oz.grm.gz</code> and
+<code>oz.grm.id</code> files in the <code>output</code> folder. Note:
 you will need to create the <code>output</code> folder first if you
 don’t have one.</p>
 <p>To visualize this:</p>
@@ -667,7 +667,7 @@ tileplot &lt;- function(mat)
 {
   mat = data.frame(mat)
   mat$Var1 = factor(rownames(mat), levels=rownames(mat)) ## preserve rowname order
-  melted_mat &lt;- gather(mat,key=Var2,value=value,-Var1)
+  melted_mat &lt;- pivot_longer(mat, cols=-Var1, names_to=&quot;Var2&quot;, values_to=&quot;value&quot;)
   melted_mat$Var2 = factor(melted_mat$Var2, levels=colnames(mat)) ## preserve colname order
   rango = range(melted_mat$value)
   pp &lt;- ggplot(melted_mat,aes(x=Var1,y=Var2,fill=value)) + geom_tile() ##+scale_fill_gradientn(colours = c(&quot;#C00000&quot;, &quot;#FF0000&quot;, &quot;#FF8080&quot;, &quot;#FFC0C0&quot;, &quot;#FFFFFF&quot;, &quot;#C0C0FF&quot;, &quot;#8080FF&quot;, &quot;#0000FF&quot;, &quot;#0000C0&quot;), limit = c(-1,1))
