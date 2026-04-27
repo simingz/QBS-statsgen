@@ -1,7 +1,7 @@
 ---
 title: "LD Score Regression"
 output: html_document
-date: "2025-04-25"
+date: "2026-04-27"
 ---
 
 ```{r setup, include=FALSE}
@@ -16,7 +16,7 @@ library(data.table)
 LDSC can be downloaded from github (GPL-3.0 license):
 [https://github.com/bulik/ldsc](https://github.com/bulik/ldsc)
 
-For ldsc, we need anaconda to create virtual environment (for python2).
+The original LDSC was written for Python 2, which reached end-of-life in January 2020. We recommend using the actively maintained Python 3 fork: [abdenlab/ldsc-python3](https://github.com/abdenlab/ldsc-python3).
 If you haven't installed Anaconda, please check [how to install anaconda](https://cloufield.github.io/GWASTutorial/80_anaconda/).
 
 ```{bash eval=F}
@@ -28,26 +28,26 @@ cd ~/tools
 # clone the ldsc github repository
 git clone https://github.com/bulik/ldsc.git
 
-# create a virtual environment for ldsc (python2)
-cd ldsc
-conda env create --file environment.yml 
+# create a virtual environment for ldsc (python3)
+cd ldsc-python3
+conda env create --file environment.yml
 
-# may need to modify environmental.yml file by adding defaults and conda-forge to the channels to avoid issues with conda installation
+# The Python 3 environment.yml uses:
 name: ldsc
 channels:
 - defaults
 - conda-forge
 - bioconda
 dependencies:
-- python=2.7
-- bitarray=0.8
-- nose=1.3
-- pybedtools=0.7
+- python=3.11
+- bitarray
+- nose
+- pybedtools
 - pip
 - pip:
-  - scipy==0.18
-  - pandas==0.20
-  - numpy==1.16
+  - scipy
+  - pandas
+  - numpy
 
 # activate ldsc environment
 conda activate ldsc
@@ -117,7 +117,7 @@ $$
 - $N$: sample size.
 - $M$ : number of SNPs.
 - $h^2$ : observed-scale heritability
-- $a$ : the effect of confounding factors, including crytic relatedness and populatiuon stratification.
+- $a$ : the effect of confounding factors, including cryptic relatedness and population stratification.
 
 For more details of LD score regression, please refer to :
 - Bulik-Sullivan, Brendan K., et al. "LD Score regression distinguishes confounding from polygenicity in genome-wide association studies." Nature genetics 47.3 (2015): 291-295.
@@ -131,7 +131,7 @@ Before the analysis, we need to format and clean the raw sumstats.
 rsID is used here. If the sumstats only contained id like CHR:POS:REF:ALT, annotate it first (not an issue here).
 
 ```{bash eval=F}
-python2 ~/tools/ldsc/munge_sumstats.py \
+python ~/tools/ldsc/munge_sumstats.py \
 	--sumstats e2/ldsc/Mono_count_hg38_sumstats.txt.gz \
 	--a1 ALT \
 	--a2 REF \
@@ -204,7 +204,7 @@ Univariate LD score regression is utilized to estimate heritability and confound
 One can use pre-computed LD scores from 1000 Genomes for matching population (EUR, EAS, etc.) including baseline models curated by the Price group hosted on [LDSC reference data server](https://zenodo.org/records/10515792). We'll be using baselineLD_v2.2 for our LDSC run.
 
 ```{bash eval=F}
-* baseline-LD model v2.2: our last and recommanded version of the baseline-LD model (97 annotations)
+* baseline-LD model v2.2: our last and recommended version of the baseline-LD model (97 annotations)
                           includes 86 annotations from the baseline model v2.1 and 11 new annotations from Hujoel et al. 2019 AJHG
 			  (5 new binary annotations and corresponding flanking annotations + 1 continuous count annotation)
 			  4 human promoter annotation from Villar et al. 2015 Cell (promoter, promoter of ExAC genes, and 2 corresponding flanking annotations)
@@ -220,7 +220,7 @@ Using the munged sumstats and pre-computed LD scores and weights, we can run LDS
 We can perform LDSC for one chromosome at a time (e.g. chr 22)
 
 ```{bash eval=F}
-python2 ~/tools/ldsc/ldsc.py \
+python ~/tools/ldsc/ldsc.py \
   --h2  Mono_count_hg38.sumstats.gz \
   --ref-ld e2/ldsc/baselineLD.22 \
   --w-ld e2/ldsc/weights.hm3_noMHC.22 \
@@ -293,7 +293,7 @@ We can see that from the log:
 In your own time, you can use code below for running LDSC for genome-wide (all chromosomes) data if you download all the reference files in [LDSC reference data](https://zenodo.org/records/10515792)
 
 ```{bash eval=F}
-python2 ~/tools/ldsc/ldsc.py \
+python ~/tools/ldsc/ldsc.py \
   --h2  Mono_count_hg38.sumstats.gz \
   --ref-ld-chr baselineLD_v2.2/baselineLD. \
   --w-ld-chr weights.hm3_noMHC. \
@@ -395,7 +395,7 @@ $$
 chrom=22
 ANNOT=ATAC
 echo "Make ldsc-friendly annotation files for ${ANNOT}.bed"
-python2 ~/tools/ldsc/make_annot.py \
+python ~/tools/ldsc/make_annot.py \
 --bed-file e2/ldsc/ATAC_annot_hg38.bed \
 --bimfile /dartfs/rc/lab/S/Szhao/liyang/enrichment/LDSCORE/plink_files/1000G.EUR.hg38.$chrom.bim \
 --annot-file ${ANNOT}.${chrom}.annot.gz
@@ -406,7 +406,7 @@ python2 ~/tools/ldsc/make_annot.py \
 ```{bash eval=F}
 ## Step 2: Computing LD scores with an annot file
 echo "Computing LD scores with the annot file ${ANNOT}.${chrom}.annot.gz"
-python2 ~/tools/ldsc/ldsc.py \
+python ~/tools/ldsc/ldsc.py \
 --l2 \
 --bfile e2/ldsc/1000G.EUR.hg38.${chrom} \
 --print-snps e2/ldsc/hm3_no_MHC.list.txt  \
@@ -419,7 +419,7 @@ python2 ~/tools/ldsc/ldsc.py \
 #### 3. Run S-LDSC 
 
 ```{bash eval=F}
-python2 ~/tools/ldsc/ldsc.py \
+python ~/tools/ldsc/ldsc.py \
   --h2 Mono_count_hg38.sumstats.gz \
   --ref-ld ${ANNOT}.${chrom},e2/ldsc/baselineLD.${chrom} \
   --frqfile e2/ldsc/1000G.EUR.hg38.${chrom} \
@@ -471,7 +471,7 @@ Analysis finished at Sun Apr 27 16:24:12 2025
 Total time elapsed: 25.0m:46.46s
 ```
 
-```{r}
+```{r, eval=FALSE}
 results <- fread("/dartfs/rc/lab/S/Szhao/liyang/QBS-statsgen/data/Mono_count_hg38.chr22.results")
 print(results[1,])
 ```

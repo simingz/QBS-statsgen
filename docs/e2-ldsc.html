@@ -10,7 +10,7 @@
 
 
 
-<meta name="date" content="2025-04-25" />
+<meta name="date" content="2026-04-27" />
 
 <title>LD Score Regression</title>
 
@@ -347,7 +347,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">LD Score Regression</h1>
-<h4 class="date">2025-04-25</h4>
+<h4 class="date">2026-04-27</h4>
 
 </div>
 
@@ -643,10 +643,7 @@ Update
 <h3>Install LDSC</h3>
 <p>LDSC can be downloaded from github (GPL-3.0 license): <a
 href="https://github.com/bulik/ldsc">https://github.com/bulik/ldsc</a></p>
-<p>For ldsc, we need anaconda to create virtual environment (for
-python2). If you haven’t installed Anaconda, please check <a
-href="https://cloufield.github.io/GWASTutorial/80_anaconda/">how to
-install anaconda</a>.</p>
+<p>The original LDSC was written for Python 2, which reached end-of-life in January 2020. We recommend using the actively maintained Python 3 fork: <a href="https://github.com/abdenlab/ldsc-python3">abdenlab/ldsc-python3</a>. If you haven’t installed Anaconda, please check <a href="https://cloufield.github.io/GWASTutorial/80_anaconda/">how to install anaconda</a>.</p>
 <pre class="bash"><code># make tools directory if you do not have one
 mkdir ~/tools
 # change to your directory for tools
@@ -655,7 +652,7 @@ cd ~/tools
 # clone the ldsc github repository
 git clone https://github.com/bulik/ldsc.git
 
-# create a virtual environment for ldsc (python2)
+# create a virtual environment for ldsc (python3)
 cd ldsc
 conda env create --file environment.yml 
 
@@ -666,7 +663,7 @@ channels:
 - conda-forge
 - bioconda
 dependencies:
-- python=2.7
+- python=3.11
 - bitarray=0.8
 - nose=1.3
 - pybedtools=0.7
@@ -782,7 +779,7 @@ Nature genetics 47.3 (2015): 291-295.</p>
 sumstats.</p>
 <p>!!! note rsID is used here. If the sumstats only contained id like
 CHR:POS:REF:ALT, annotate it first (not an issue here).</p>
-<pre class="bash"><code>python2 ~/tools/ldsc/munge_sumstats.py \
+<pre class="bash"><code>python ~/tools/ldsc/munge_sumstats.py \
     --sumstats e2/ldsc/Mono_count_hg38_sumstats.txt.gz \
     --a1 ALT \
     --a2 REF \
@@ -852,7 +849,7 @@ population (EUR, EAS, etc.) including baseline models curated by the
 Price group hosted on <a href="https://zenodo.org/records/10515792">LDSC
 reference data server</a>. We’ll be using baselineLD_v2.2 for our LDSC
 run.</p>
-<pre class="bash"><code>* baseline-LD model v2.2: our last and recommanded version of the baseline-LD model (97 annotations)
+<pre class="bash"><code>* baseline-LD model v2.2: our last and recommended version of the baseline-LD model (97 annotations)
                           includes 86 annotations from the baseline model v2.1 and 11 new annotations from Hujoel et al. 2019 AJHG
               (5 new binary annotations and corresponding flanking annotations + 1 continuous count annotation)
               4 human promoter annotation from Villar et al. 2015 Cell (promoter, promoter of ExAC genes, and 2 corresponding flanking annotations)
@@ -864,7 +861,7 @@ can run LDSC for one chromosome:</p>
 <div id="run-for-one-chromosome" class="section level3">
 <h3>Run for one chromosome</h3>
 <p>We can perform LDSC for one chromosome at a time (e.g. chr 22)</p>
-<pre class="bash"><code>python2 ~/tools/ldsc/ldsc.py \
+<pre class="bash"><code>python ~/tools/ldsc/ldsc.py \
   --h2  Mono_count_hg38.sumstats.gz \
   --ref-ld e2/ldsc/baselineLD.22 \
   --w-ld e2/ldsc/weights.hm3_noMHC.22 \
@@ -936,7 +933,7 @@ Total time elapsed: 28.0m:15.27s</code></pre>
 genome-wide (all chromosomes) data if you download all the reference
 files in <a href="https://zenodo.org/records/10515792">LDSC reference
 data</a></p>
-<pre class="bash"><code>python2 ~/tools/ldsc/ldsc.py \
+<pre class="bash"><code>python ~/tools/ldsc/ldsc.py \
   --h2  Mono_count_hg38.sumstats.gz \
   --ref-ld-chr baselineLD_v2.2/baselineLD. \
   --w-ld-chr weights.hm3_noMHC. \
@@ -1041,7 +1038,7 @@ statistics.” Nature genetics 47.11 (2015): 1228-1235.</p></li>
 chrom=22
 ANNOT=ATAC
 echo &quot;Make ldsc-friendly annotation files for ${ANNOT}.bed&quot;
-python2 ~/tools/ldsc/make_annot.py \
+python ~/tools/ldsc/make_annot.py \
 --bed-file e2/ldsc/ATAC_annot_hg38.bed \
 --bimfile /dartfs/rc/lab/S/Szhao/liyang/enrichment/LDSCORE/plink_files/1000G.EUR.hg38.$chrom.bim \
 --annot-file ${ANNOT}.${chrom}.annot.gz</code></pre>
@@ -1051,7 +1048,7 @@ class="section level4">
 <h4>2. Compute LD scores with the annotation (.annot.gz) file</h4>
 <pre class="bash"><code>## Step 2: Computing LD scores with an annot file
 echo &quot;Computing LD scores with the annot file ${ANNOT}.${chrom}.annot.gz&quot;
-python2 ~/tools/ldsc/ldsc.py \
+python ~/tools/ldsc/ldsc.py \
 --l2 \
 --bfile e2/ldsc/1000G.EUR.hg38.${chrom} \
 --print-snps e2/ldsc/hm3_no_MHC.list.txt  \
@@ -1062,7 +1059,7 @@ python2 ~/tools/ldsc/ldsc.py \
 </div>
 <div id="run-s-ldsc" class="section level4">
 <h4>3. Run S-LDSC</h4>
-<pre class="bash"><code>python2 ~/tools/ldsc/ldsc.py \
+<pre class="bash"><code>python ~/tools/ldsc/ldsc.py \
   --h2 Mono_count_hg38.sumstats.gz \
   --ref-ld ${ANNOT}.${chrom},e2/ldsc/baselineLD.${chrom} \
   --frqfile e2/ldsc/1000G.EUR.hg38.${chrom} \
