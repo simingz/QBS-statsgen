@@ -11,10 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Before the class
 
-Install R package `susieR`:
+Install R packages `susieR` and `Rfast` (the latter speeds up credible set calculations):
 
 ```{r, eval=FALSE}
 install.packages("susieR")
+install.packages("Rfast")
 ```
 
 # Explore the data we will use the analysis
@@ -81,7 +82,7 @@ z-scores are provided and we can compute R from X.
 
 ```{r}
 R <- cor(X)
-fitted_rss <- susie_rss(z_scores, R, L = 10)
+fitted_rss <- susie_rss(z_scores, R, L = 10, n = nrow(X))
 plot(fitted$pip, fitted_rss$pip, ylim=c(0,1))
 ```
 

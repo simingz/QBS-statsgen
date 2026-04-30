@@ -13,45 +13,78 @@ library(data.table)
 
 ### Install LDSC
 
-LDSC can be downloaded from github (GPL-3.0 license):
-[https://github.com/bulik/ldsc](https://github.com/bulik/ldsc)
+There are two options for installing LDSC. If you haven't installed Anaconda, please check [how to install anaconda](https://cloufield.github.io/GWASTutorial/80_anaconda/) first.
 
-The original LDSC was written for Python 2, which reached end-of-life in January 2020. We recommend using the actively maintained Python 3 fork: [abdenlab/ldsc-python3](https://github.com/abdenlab/ldsc-python3).
-If you haven't installed Anaconda, please check [how to install anaconda](https://cloufield.github.io/GWASTutorial/80_anaconda/).
+#### Option 1: Original LDSC (Python 2)
+
+The original LDSC ([https://github.com/bulik/ldsc](https://github.com/bulik/ldsc)) requires Python 2, which reached end-of-life in January 2020. It can still be installed via conda using the environment file provided in the repository. Use this option if you are working on a cluster (e.g., Dartmouth Discovery) where a compatible environment is already available.
 
 ```{bash eval=F}
-# make tools directory if you do not have one
-mkdir ~/tools
-# change to your directory for tools
-cd ~/tools
-
-# clone the ldsc github repository
+mkdir ~/tools && cd ~/tools
 git clone https://github.com/bulik/ldsc.git
-
-# create a virtual environment for ldsc (python3)
-cd ldsc-python3
+cd ldsc
 conda env create --file environment.yml
+conda activate ldsc
+```
 
-# The Python 3 environment.yml uses:
+The [`environment.yml`](https://github.com/bulik/ldsc/blob/master/environment.yml) file is included in the repo root. If conda has trouble resolving packages from `bioconda` alone, add `defaults` and `conda-forge` to the channels before running `conda env create`:
+
+```yaml
 name: ldsc
 channels:
 - defaults
 - conda-forge
 - bioconda
 dependencies:
-- python=3.11
-- bitarray
-- nose
-- pybedtools
+- python=2.7
+- bitarray=0.8
+- nose=1.3
+- pybedtools=0.7
 - pip
 - pip:
-  - scipy
-  - pandas
-  - numpy
-
-# activate ldsc environment
-conda activate ldsc
+  - scipy==0.18
+  - pandas==0.20
+  - numpy==1.16
 ```
+
+#### Option 2: Python 3 fork (recommended for local use)
+
+The community-maintained Python 3 fork ([abdenlab/ldsc-python3](https://github.com/abdenlab/ldsc-python3)) works with modern Python and does not require a Python 2 environment.
+
+```{bash eval=F}
+mkdir ~/tools && cd ~/tools
+git clone https://github.com/abdenlab/ldsc-python3.git
+cd ldsc-python3
+conda create -n ldsc python=3.11 -y
+conda activate ldsc
+pip install scipy pandas numpy bitarray
+```
+
+**Note:** As of April 2026, the `abdenlab/ldsc-python3` fork has three bugs that require manual patching before use:
+
+1. **gzip read mode** — in `munge_sumstats.py`, change `gzip.open` to open in text mode:
+```python
+# Change:
+openfunc = gzip.open
+# To:
+openfunc = lambda f: gzip.open(f, "rt")
+```
+
+2. **Deprecated pandas argument** — replace `delim_whitespace=True` with `sep=r"\s+"` in `munge_sumstats.py`, `ldscore/parse.py`, and `make_annot.py`.
+
+3. **Renamed functions** — in `ldsc.py`, update the three function calls to match the new names in `ldscore/sumstats.py`:
+```python
+# Change:
+sumstats.estimate_rg(args, log)
+sumstats.estimate_h2(args, log)
+sumstats.cell_type_specific(args, log)
+# To:
+sumstats.estimate_genetic_correlation(args, log)
+sumstats.estimate_heritability(args, log)
+sumstats.estimate_cell_type_specific_heritability(args, log)
+```
+
+Regardless of which option you use, replace `python2` with `python` (Option 1) or `python` (Option 2) in all commands below.
 
 ### Data Preparation
 
@@ -471,10 +504,23 @@ Analysis finished at Sun Apr 27 16:24:12 2025
 Total time elapsed: 25.0m:46.46s
 ```
 
+The heritability estimate and intercept are reported in the `.log` file. You can extract key results in R:
+
 ```{r, eval=FALSE}
-results <- fread("/dartfs/rc/lab/S/Szhao/liyang/QBS-statsgen/data/Mono_count_hg38.chr22.results")
-print(results[1,])
+log_lines <- readLines("output/Mono_count_hg38.chr22.log")
+cat(grep("Total Observed scale h2|Intercept|Ratio|Lambda GC|Mean Chi", log_lines, value=TRUE), sep="\n")
 ```
+
+Example output from chr22:
+```
+Total Observed scale h2: 0.0074 (0.0019)
+Lambda GC: 2.0007
+Mean Chi^2: 3.8892
+Intercept: 1.1651 (0.1597)
+Ratio: 0.0572 (0.0553)
+```
+
+The low ratio (0.057) indicates most inflation is due to polygenicity rather than confounding.
 
 
 ## Extending LDSC
