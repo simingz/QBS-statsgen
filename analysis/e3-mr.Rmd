@@ -1,7 +1,7 @@
 ---
 title: "Integrating eQTL and GWAS: TWAS and coloc"
 author: "Siming Zhao"
-date: "2/3/2024"
+date: "2026-05-12"
 output: html_document
 ---
 
@@ -18,7 +18,17 @@ install.packages("remotes")
 remotes::install_github("MRCIEU/TwoSampleMR")
 ```
 
-Note: you likely will need R >= 4.2 to install this package. If you don't have R version 4.2 or later, you can try with [POSIT](https://posit.cloud/).
+Note: R >= 4.4 is required (MASS, a dependency, requires R >= 4.4 as of 2026). If you don't have R 4.4 or later, you can use [Posit Cloud](https://posit.cloud/).
+
+**Important:** As of 2025, TwoSampleMR uses the [IEU OpenGWAS API](https://opengwas.io/) for data access, and API authentication is now required. Functions like `extract_instruments()`, `extract_outcome_data()`, `available_outcomes()`, and `clump_data()` will not work without a valid token. No local plink installation is needed — LD clumping is performed server-side.
+
+To authenticate, register at [https://opengwas.io/](https://opengwas.io/) and set your token:
+
+```{r, eval=FALSE}
+ieugwasr::set_opengwas_jwt("YOUR_TOKEN_HERE")
+```
+
+Code blocks below that require API access are marked `eval=FALSE`. Run them interactively after setting your token.
 
 # Perform MR
 
@@ -56,37 +66,41 @@ head(bmi_exp_dat)
 
 To serve as valid instruments, they need to be independent. Thus we need to do clumping (those SNPs that have LD R-square above the specified threshold only the SNP with the lowest P-value will be retained). 
 
-```{r}
+```{r, eval=FALSE}
+# Requires API token — see authentication note above
 bmi_exp_dat <- clump_data(bmi_exp_dat)
 ```
 
+This package can also obtain data from thousands of existing GWAS directly.
+A list of available GWAS:
 
-This package can also obtain data from thousands of existing GWAS directly. 
-A list of available GWAS
-
-```{r}
+```{r, eval=FALSE}
+# Requires API token
 ao <- available_outcomes()
 head(ao)
 ```
 
 To extract instruments for a particular trait using a particular study, for example to obtain SNPs for body mass index using the Locke et al 2015 GIANT study, you specify the study ID as follows:
 
-This returns a set of LD clumped SNPs that are GWAS significant for BMI
-```{r}
+This returns a set of LD clumped SNPs that are GWAS significant for BMI:
+```{r, eval=FALSE}
+# Requires API token
 bmi2014_exp_dat <- extract_instruments(outcomes = 'ieu-a-2')
 ```
 
-## Get effects of intruments on outcomes
+## Get effects of instruments on outcomes
 
 We now need to find a suitable GWAS for coronary heart disease. We can search the available studies:
 
-
-```{r}
+```{r, eval=FALSE}
+# Requires API token
 ao[grepl("heart disease", ao$trait), ]
 ```
+
 The most recent CARDIOGRAM GWAS is ID number ieu-a-7. We can extract the BMI SNPs from this GWAS as follows:
 
-```{r}
+```{r, eval=FALSE}
+# Requires API token
 chd_out_dat <- extract_outcome_data(
     snps = bmi_exp_dat$SNP,
     outcomes = 'ieu-a-7'
@@ -95,9 +109,9 @@ chd_out_dat <- extract_outcome_data(
 
 ## Harmonise the exposure and outcome data
 
-```{r}
+```{r, eval=FALSE}
 dat <- harmonise_data(
-    exposure_dat = bmi_exp_dat, 
+    exposure_dat = bmi_exp_dat,
     outcome_dat = chd_out_dat
 )
 #> Harmonising Body mass index || id:ieu-a-2 (ieu-a-2) and Coronary heart disease || id:ieu-a-7 (ieu-a-7)
@@ -106,28 +120,28 @@ dat <- harmonise_data(
 ## Perform MR
 
 We use two methods, MR-Egger and inverse variance weighting.
-```{r}
+```{r, eval=FALSE}
 res <- mr(dat, method_list = c("mr_egger_regression", "mr_ivw"))
 res
 ```
 
 # Analyze MR results
 
-* Test for heterogeneity: 
+* Test for heterogeneity:
 
-```{r}
+```{r, eval=FALSE}
 mr_heterogeneity(dat)
 ```
 
 * Horizontal pleiotropy
 
-```{r}
+```{r, eval=FALSE}
 mr_pleiotropy_test(dat)
 ```
 
 * Scatter Plot
 
-```{r}
+```{r, eval=FALSE}
 p1 <- mr_scatter_plot(res, dat)
 p1
 ```

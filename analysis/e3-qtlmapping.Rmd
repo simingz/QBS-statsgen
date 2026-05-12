@@ -1,7 +1,7 @@
 ---
 title: "Exercise-3-eQTL calling"
 author: "Siming Zhao"
-date: '2026-04-13'
+date: '2026-05-12'
 output: html_document
 ---
 
@@ -331,7 +331,7 @@ abline(lm_top, col="darkorange", lwd = 2, lty = 2)
 y_range = range(plot_data[,"gene_expr"])
   text(x=2, y=y_range[1] + 0.5*diff(y_range), paste0("p=",
   format(summary(lm_top)$coefficients[2,4],
-  scentific=TRUE, digits=2)), col = "darkorange")
+  scientific=TRUE, digits=2)), col = "darkorange")
 ```
 
 
