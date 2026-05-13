@@ -25,7 +25,9 @@ Note: R >= 4.4 is required (MASS, a dependency, requires R >= 4.4 as of 2026). I
 To authenticate, register at [https://opengwas.io/](https://opengwas.io/) and set your token:
 
 ```{r, eval=FALSE}
-ieugwasr::set_opengwas_jwt("YOUR_TOKEN_HERE")
+token <- "YOUR_TOKEN_HERE"
+ieugwasr::set_opengwas_jwt(token)
+Sys.setenv(OPENGWAS_JWT = token)  # may be needed on some systems
 ```
 
 Code blocks below that require API access are marked `eval=FALSE`. Run them interactively after setting your token.

@@ -373,7 +373,9 @@ not work without a valid token. No local plink installation is needed —
 LD clumping is performed server-side.</p>
 <p>To authenticate, register at <a href="https://opengwas.io/">https://opengwas.io/</a> and set your
 token:</p>
-<pre class="r"><code>ieugwasr::set_opengwas_jwt(&quot;YOUR_TOKEN_HERE&quot;)</code></pre>
+<pre class="r"><code>token &lt;- &quot;YOUR_TOKEN_HERE&quot;
+ieugwasr::set_opengwas_jwt(token)
+Sys.setenv(OPENGWAS_JWT = token)  # may be needed on some systems</code></pre>
 <p>Code blocks below that require API access are marked
 <code>eval=FALSE</code>. Run them interactively after setting your
 token.</p>
